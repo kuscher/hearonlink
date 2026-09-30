@@ -49,7 +49,7 @@ fun AppSettingsPage(settings: Settings, c: Ctx) {
         Group("Notifications", listOf(
             { m -> SwitchRow(m, "Low battery", "When an AirPod drops to 10 %", settings.lowBattery, R.drawable.ic_bell) { v -> c.prefs.update { it.copy(lowBattery = v) } } },
             { m ->
-                SwitchRow(m, "Case opened nearby", "Battery at a glance when you open the case and the AirPods aren't connected yet", settings.nearbyAlert) { v ->
+                SwitchRow(m, "Case opened nearby", "Battery at a glance when you open the case and the AirPods aren't connected yet", settings.nearbyAlert && Nearby.allowed(context)) { v ->
                     if (v && context.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) scanPermission.launch(Manifest.permission.BLUETOOTH_SCAN)
                     else { c.prefs.update { it.copy(nearbyAlert = v) }; Nearby.ensure(context) }
                 }
