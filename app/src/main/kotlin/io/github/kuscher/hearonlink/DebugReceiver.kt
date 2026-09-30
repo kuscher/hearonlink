@@ -80,6 +80,36 @@ class DebugReceiver : BroadcastReceiver() {
                     pending.finish()
                 }
             }
+            "render" -> {
+                // render KIND W H DPI DARK(0|1) -> cache/render.png (see ui/Shots.kt)
+                val pending = goAsync()
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    io.github.kuscher.hearonlink.ui.Shots.render(context, parts[1], parts[2].toInt(), parts[3].toInt(), parts[4].toInt(), parts.getOrNull(5) == "1",
+                        File(context.cacheDir, "render.png")) { say(it); pending.finish() }
+                }
+            }
+            "selftest" -> {
+                // One receiver call: connect, flip a control id (default 0x28, conversation awareness)
+                // to value A and back to value B, and report what the AirPods echoed.
+                val id = parts.getOrNull(1)?.toInt(16) ?: 0x28
+                val a = parts.getOrNull(2)?.toInt() ?: 1
+                val b = parts.getOrNull(3)?.toInt() ?: 2
+                val pending = goAsync()
+                scope.launch {
+                    val seen = StringBuilder()
+                    val watch = launch { link.events.collect { e -> if (e is AapEvent.Control && e.id == id) seen.append(" echo=").append(e.v1) } }
+                    link.connect()
+                    withTimeoutOrNull(5000) { while (!link.state.value.connected) delay(100) }
+                    delay(1500)
+                    val before = link.state.value.pod.control(id)
+                    link.setControl(id, a); delay(1500)
+                    link.setControl(id, b); delay(1500)
+                    watch.cancel()
+                    say("id=%02x before=$before set $a then $b ->$seen".format(id))
+                    link.disconnect()
+                    pending.finish()
+                }
+            }
             "wait" -> { // wait until connected (max N s), for scripts
                 val pending = goAsync()
                 scope.launch {

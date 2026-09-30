@@ -21,7 +21,10 @@ data class DeviceInfo(
     val leftSerial: String?,
     val rightSerial: String?,
     val build: String?,
-)
+) {
+    /** Never print serial numbers (they identify the AirPods). */
+    override fun toString() = "DeviceInfo(name=$name, model=$modelNumber, firmware=$firmware, build=$build)"
+}
 
 /** Everything the AirPods can tell us, decoded. Unknown messages are kept raw. */
 sealed interface AapEvent {

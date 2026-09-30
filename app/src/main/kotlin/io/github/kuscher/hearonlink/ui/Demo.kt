@@ -68,16 +68,16 @@ private const val TRACE = 100
 /** Live head-gesture demo: nod for yes, shake for no. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun DemoScreen(s: LinkState, settings: Settings, c: Ctx, wide: Boolean) {
+fun DemoScreen(s: LinkState, settings: Settings, c: Ctx, wide: Boolean, forced: Gesture? = null) {
     val link = c.link
     DisposableEffect(s.connected) {
         if (s.connected) link.trackHead("demo", true)
         onDispose { link.trackHead("demo", false) }
     }
     val detector = remember(settings.sensitivity) { HeadGestureDetector(settings.sensitivity) }
-    var result by remember { mutableStateOf<Gesture?>(null) }
-    var yes by remember { mutableIntStateOf(0) }
-    var no by remember { mutableIntStateOf(0) }
+    var result by remember { mutableStateOf(forced) }
+    var yes by remember { mutableIntStateOf(if (forced != null) 3 else 0) }
+    var no by remember { mutableIntStateOf(if (forced != null) 1 else 0) }
     val vTrace = remember { FloatArray(TRACE) }
     val hTrace = remember { FloatArray(TRACE) }
     var head by remember { mutableIntStateOf(0) }
@@ -94,11 +94,13 @@ fun DemoScreen(s: LinkState, settings: Settings, c: Ctx, wide: Boolean) {
             if (g != null) { result = g; if (g == Gesture.NOD) yes++ else no++ }
         }
     }
-    LaunchedEffect(result, tick / 50) { if (result != null) { delay(2200); result = null } }
+    LaunchedEffect(result, tick / 50) { if (result != null && forced == null) { delay(2200); result = null } }
     var waited by remember { mutableStateOf(false) }
     LaunchedEffect(s.connected) { waited = false; delay(3500); waited = true }
 
     val caption = when {
+        forced == Gesture.NOD -> "Nod detected"
+        forced == Gesture.SHAKE -> "Shake detected"
         !s.connected -> "Connect your AirPods to try this"
         head == 0 && waited -> "Waiting for head motion. Put your AirPods in; if they're playing from another device, switch them here."
         head == 0 -> "Starting head tracking…"

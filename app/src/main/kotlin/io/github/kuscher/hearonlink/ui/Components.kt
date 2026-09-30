@@ -286,7 +286,11 @@ fun ModeGroup(selected: ListeningMode?, modes: List<ListeningMode>, enabled: Boo
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Glyph(m.icon, size = 22.dp)
-                    Text(m.label, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center, maxLines = 2, lineHeight = 14.sp)
+                    androidx.compose.foundation.text.BasicText(
+                        m.label, maxLines = if (' ' in m.label) 2 else 1,
+                        style = MaterialTheme.typography.labelMedium.copy(textAlign = TextAlign.Center, lineHeight = 14.sp, color = LocalContentColor.current),
+                        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp, stepSize = 0.5.sp),
+                    )
                 }
             }
         }
@@ -316,8 +320,8 @@ fun Group(title: String? = null, rows: List<@Composable (Modifier) -> Unit>) {
 @Composable
 fun SettingRow(
     modifier: Modifier, title: String, sub: String? = null, @DrawableRes lead: Int? = null,
-    onClick: (() -> Unit)? = null, enabled: Boolean = true, trailing: @Composable (() -> Unit)? = null,
-    below: @Composable (ColumnScope.() -> Unit)? = null,
+    onClick: (() -> Unit)? = null, enabled: Boolean = true, below: @Composable (ColumnScope.() -> Unit)? = null,
+    trailing: @Composable (() -> Unit)? = null,
 ) {
     val base = modifier.fillMaxWidth().background(LocalHearOnColors.current.card)
     val m = if (onClick != null && enabled) base.clickable(onClick = onClick) else base
@@ -364,6 +368,12 @@ fun Choice(options: List<String>, selected: Int, enabled: Boolean = true, onSele
                     options.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
                     else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                 },
+                colors = ToggleButtonDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    checkedContainerColor = MaterialTheme.colorScheme.primary,
+                    checkedContentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
             ) { Text(label, maxLines = 1) }
         }
     }

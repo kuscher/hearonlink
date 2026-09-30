@@ -91,11 +91,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AppScreen(s: LinkState, settings: Settings) {
+fun AppScreen(s: LinkState, settings: Settings, initialPage: Page = Page.HOME, forced: io.github.kuscher.hearonlink.gestures.Gesture? = null) {
     val context = LocalContext.current
     val app = context.hearOn
     val wide = windowWidthDp() >= 840.dp
-    var page by rememberSaveable { mutableStateOf(Page.HOME) }
+    var page by rememberSaveable { mutableStateOf(initialPage) }
     val c = remember(wide) { Ctx(app.link, app.prefs, { page = it }, phone = !wide) }
     BackHandler(page != Page.HOME) { page = Page.HOME }
     val chrome = LocalHearOnColors.current.chrome
@@ -127,7 +127,7 @@ private fun AppScreen(s: LinkState, settings: Settings) {
             }
         }
         when {
-            page == Page.DEMO -> DemoScreen(s, settings, c, wide)
+            page == Page.DEMO -> DemoScreen(s, settings, c, wide, forced)
             wide -> Row(Modifier.fillMaxSize()) {
                 if (page != Page.SETTINGS) Column(
                     Modifier.width(452.dp).fillMaxHeight().background(chrome).verticalScroll(rememberScrollState())
@@ -207,32 +207,37 @@ class PanelActivity : ComponentActivity() {
         setContent {
             val settings by app.prefs.settings.collectAsStateWithLifecycle()
             val s by app.link.state.collectAsStateWithLifecycle()
-            HearOnTheme(settings) {
-                val p = s.pod
-                Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.width(400.dp)) {
-                    Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(s.name, style = MaterialTheme.typography.headlineSmall)
-                            StatusDot(statusText(s), s.connected)
-                        }
-                        val live = s.connected
-                        BatteryTrio(listOf(
-                            Cell("Left", if (live) p.left.battery else s.last.leftLevel, ""),
-                            Cell("Case", if (live) p.case else s.last.caseLevel, if (p.case?.charging == true) "Charging" else ""),
-                            Cell("Right", if (live) p.right.battery else s.last.rightLevel, ""),
-                        ), big = false, faded = !live)
-                        if (live && p.has(Feature.LISTENING_MODES)) ModeGroup(p.listeningMode, availableModes(p), height = 68.dp, onSelect = app.link::setMode)
-                        if (live && p.has(Feature.CONVERSATION_AWARENESS)) Group(rows = listOf { m ->
-                            SwitchRow(m, "Conversation awareness", null, p.conversationAwareness) { app.link.setFlag(Control.CONVERSATION_AWARENESS, it) }
-                        })
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            TextAction("Open HearOn Link") {
-                                startActivity(Intent(this@PanelActivity, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); finish()
-                            }
-                            PillButton("Done") { finish() }
-                        }
-                    }
+            HearOnTheme(settings) { PanelContent(s, app.link) { finish() } }
+        }
+    }
+}
+
+/** The panel's content (also used for screenshots). */
+@Composable
+fun PanelContent(s: LinkState, link: io.github.kuscher.hearonlink.link.Link, close: () -> Unit) {
+    val context = LocalContext.current
+    val p = s.pod
+    Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.width(400.dp)) {
+        Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(s.name, style = MaterialTheme.typography.headlineSmall)
+                StatusDot(statusText(s), s.connected)
+            }
+            val live = s.connected
+            BatteryTrio(listOf(
+                Cell("Left", if (live) p.left.battery else s.last.leftLevel, ""),
+                Cell("Case", if (live) p.case else s.last.caseLevel, if (p.case?.charging == true) "Charging" else ""),
+                Cell("Right", if (live) p.right.battery else s.last.rightLevel, ""),
+            ), big = false, faded = !live)
+            if (live && p.has(Feature.LISTENING_MODES)) ModeGroup(p.listeningMode, availableModes(p), height = 68.dp, onSelect = link::setMode)
+            if (live && p.has(Feature.CONVERSATION_AWARENESS)) Group(rows = listOf { m ->
+                SwitchRow(m, "Conversation awareness", null, p.conversationAwareness) { link.setFlag(Control.CONVERSATION_AWARENESS, it) }
+            })
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                TextAction("Open HearOn Link") {
+                    context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); close()
                 }
+                PillButton("Done") { close() }
             }
         }
     }

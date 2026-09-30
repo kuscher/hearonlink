@@ -62,3 +62,17 @@ the stop packet. So the head-gesture demo works on this unrooted Googlebook.
 
 Still to probe: a listening-mode write (0x0D), reconnect/sleep behaviour, a recorded nod/shake trace
 for unit tests, and the same checks on the x86_64 ASUS Googlebook.
+
+## Writes (2026-09-30, HearOn Link + probe)
+
+- Control writes (`04 00 04 00 09 00 [id] [v…]`) are **applied but not echoed** to the host that
+  sent them: conversation awareness 0x28 = 1 read back as on after a reconnect, then restored to 2.
+  So the app updates its own state optimistically (it does) and must not wait for an echo.
+- A listening-mode write (0x0D = 2, Noise Cancellation) did not stick while **both buds were out of
+  ear on the desk**; the AirPods still reported Transparency after a reconnect. Likely noise control
+  only applies while worn. To re-test with the AirPods in.
+- The AirPods answer the key request (op 0x30 → 0x31) with both the identity key and the advert
+  key; HearOn Link stores them in private, non-backed-up storage.
+- Background service starts are denied without a companion-device association
+  (`ForegroundServiceStartNotAllowedException`, BFGS denied) — onboarding's association is required
+  for "start when the AirPods connect".

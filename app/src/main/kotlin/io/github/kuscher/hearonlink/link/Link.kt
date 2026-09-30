@@ -152,9 +152,9 @@ class Link(private val context: Context, private val prefs: Prefs) {
             is AapEvent.Keys -> { e.irk?.let { prefs.irk = it }; e.encKey?.let { prefs.encKey = it } }
             is AapEvent.Battery, is AapEvent.Info, is AapEvent.Control -> remember(pod)
             is AapEvent.Sensor -> HeadMotion.decode(e.payload)?.let { _head.tryEmit(it) }
-            is AapEvent.Unknown -> if (DEBUG) Log.d(TAG, "rx $e")
             else -> {}
         }
+        if (DEBUG && e !is AapEvent.Sensor) Log.i(TAG, "rx $e")
         reactions.onEvent(e, before, pod)
         _events.tryEmit(e)
     }
@@ -178,7 +178,7 @@ class Link(private val context: Context, private val prefs: Prefs) {
 
     fun sendRaw(packet: ByteArray): Boolean {
         val c = conn ?: return false
-        if (DEBUG) Log.d(TAG, "tx ${packet.hex()}")
+        if (DEBUG) Log.i(TAG, "tx ${packet.hex()}")
         c.send(packet); return true
     }
 
