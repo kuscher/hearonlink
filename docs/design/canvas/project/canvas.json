@@ -1,10 +1,11 @@
 {
  "v": 3,
+ "attachments": {},
  "createdOnFiles": {
   "v": 1,
   "at": "2026-09-30T18:18:21Z"
  },
- "title": "PodLink design",
+ "title": "HearOn Link design",
  "launch": {
   "view": "canvas"
  },
@@ -109,7 +110,7 @@
   "t-desk": {
    "x": -1360,
    "y": -300,
-   "text": "PodLink on a Googlebook",
+   "text": "HearOn Link on a Googlebook",
    "kind": "title1",
    "maxW": 5360
   },
@@ -130,7 +131,7 @@
   "n-qs": {
    "x": 2720,
    "y": 2010,
-   "text": "Tile tap opens the panel (the subpage). Long-press opens PodLink. A setting can make a tap cycle the press-and-hold modes instead.",
+   "text": "Tile tap opens the panel (the subpage). Long-press opens HearOn Link. A setting can make a tap cycle the press-and-hold modes instead.",
    "w": 340,
    "fill": "teal"
   },

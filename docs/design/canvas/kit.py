@@ -1,4 +1,4 @@
-"""Tiny HTML kit for the PodLink design canvas (.dc.html artboards)."""
+"""Tiny HTML kit for the HearOn Link design canvas (.dc.html artboards)."""
 import json
 
 FONT = "/_blob/6a8e0bb3a701fd95067570c96ed94928"
@@ -77,8 +77,8 @@ def page(title, w, h, body, props=None, script=None, lang="en"):
 <x-dc>
 <helmet>
 <style>
-@font-face{{font-family:"PodLink Sans";src:url({FONT}) format("truetype");font-weight:300 800;font-display:block}}
-body{{margin:0;font-family:"PodLink Sans",system-ui,sans-serif}}
+@font-face{{font-family:"HearOn Sans";src:url({FONT}) format("truetype");font-weight:300 800;font-display:block}}
+body{{margin:0;font-family:"HearOn Sans",system-ui,sans-serif}}
 button{{font-family:inherit;cursor:pointer}}
 a{{color:inherit}}
 </style>

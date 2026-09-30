@@ -1,4 +1,4 @@
-<title>PodLink Plan</title>
+<title>HearOn Link Plan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@300..800&family=Google+Sans+Code:wght@400..600&display=swap">
@@ -104,18 +104,18 @@ footer { font-size: 0.85rem; color: var(--muted) }
 
 <main>
 <header class="hero">
-  <div class="eyebrow">AirPods for Googlebooks and Android phones · working name</div>
-  <h1>PodLink</h1>
+  <div class="eyebrow">AirPods for Googlebooks and Android phones</div>
+  <h1>HearOn Link</h1>
   <p class="lede">A calm Material 3 Expressive companion for AirPods: battery, listening modes, conversation awareness, ear detection, head gestures, and a Quick Settings tile. It works on your Googlebook without root.</p>
   <div class="status">
     <span class="pill ok">Research done</span>
     <span class="pill ok">Feasibility proven on your HP</span>
-    <span class="pill next">Design: draft for your approval</span>
-    <span class="pill">Build: waiting for your go</span>
+    <span class="pill ok">Design direction approved</span>
+    <span class="pill next">Building v0.1</span>
   </div>
   <div class="links">
     <a class="btn" href="https://claude.ai/artifact/TPTz5wiH4FfdQvC5mhV1bu">Open the design canvas</a>
-    <a class="btn soft" href="https://github.com/kuscher/podlink">Repo (private)</a>
+    <a class="btn soft" href="https://github.com/kuscher/hearonlink">Repo (private)</a>
   </div>
 </header>
 
@@ -136,7 +136,7 @@ footer { font-size: 0.85rem; color: var(--muted) }
         <tr><td>Hidden <code>createL2capSocket(0x1001)</code> via HiddenApiBypass</td><td>Connects in about 100 ms. No root, no Xposed.</td></tr>
         <tr><td>Handshake and notification request</td><td>Model, firmware, capability list, 19 settings, battery (left 100 %, right 100 %), listening mode (Transparency), ear state, bud role.</td></tr>
         <tr><td>Head motion (DEVMOTION6 sensor)</td><td>Start acknowledged, then 181 samples in 7.1 s (25 Hz). Stops on request.</td></tr>
-        <tr><td>Features that need Apple's vendor ID</td><td>Hearing aid, transparency tuning, loud sound reduction and automatic switching need the host to claim Apple's Bluetooth vendor ID. That takes root, and new AirPods firmware drops such hosts every ~40 s anyway. PodLink leaves them out.</td></tr>
+        <tr><td>Features that need Apple's vendor ID</td><td>Hearing aid, transparency tuning, loud sound reduction and automatic switching need the host to claim Apple's Bluetooth vendor ID. That takes root, and new AirPods firmware drops such hosts every ~40 s anyway. HearOn Link leaves them out.</td></tr>
       </tbody>
     </table>
   </div>
@@ -144,23 +144,24 @@ footer { font-size: 0.85rem; color: var(--muted) }
 </section>
 
 <section id="features">
-  <h2>What PodLink does</h2>
-  <p>PodLink shows only what your AirPods report they support. The AirPods send a capability list when they connect, and the UI follows it, so AirPods 4 see a shorter page than AirPods Pro 3.</p>
+  <h2>What HearOn Link does</h2>
+  <p>HearOn Link shows only what your AirPods report they support. The AirPods send a capability list when they connect, and the UI follows it, so AirPods 4 see a shorter page than AirPods Pro 3.</p>
   <div class="table-wrap wide">
     <table>
       <thead><tr><th>Feature</th><th>How</th><th>When</th></tr></thead>
       <tbody>
-        <tr><td>Battery: left, right, case</td><td>Pushed by the AirPods while connected. After the first session PodLink stores the AirPods' two Bluetooth keys, so their adverts give 1 % battery and a "case opened nearby" moment even while they play from another device.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
+        <tr><td>Battery: left, right, case</td><td>Pushed by the AirPods while connected. After the first session HearOn Link stores the AirPods' two Bluetooth keys, so their adverts give 1 % battery and a "case opened nearby" moment even while they play from another device.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
         <tr><td>Listening mode</td><td>Off, Transparency, Adaptive, Noise Cancellation. The app, the tile, the panel and the notification stay in sync.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
         <tr><td>Press-and-hold modes</td><td>Pick which modes a stem hold switches between (at least two).</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
-        <tr><td>Conversation awareness</td><td>Turn it on or off. When you start talking, PodLink lowers the media volume, then restores it.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
+        <tr><td>Conversation awareness</td><td>Turn it on or off. When you start talking, HearOn Link lowers the media volume, then restores it.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
         <tr><td>Adaptive audio, Personalized volume</td><td>Adaptive level slider (less or more noise) and a toggle.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
         <tr><td>Ear detection</td><td>Pause when you take an AirPod out, play again when it goes back in, and never resume something you paused yourself.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
         <tr><td>Controls</td><td>Noise Cancellation with one AirPod, press speed, hold duration, swipe for volume, tone volume.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
         <tr><td>Name and details</td><td>Rename, model, firmware, serial numbers (shown on click).</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
-        <tr><td>Head gestures</td><td>Demo mode with Yes and No on every device. On phones, nod to accept a call and shake to decline. Head tracking runs only while the demo is open or a call rings.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
-        <tr><td>Quick Settings and notifications</td><td>A listening-mode tile with a small panel. A silent notification while connected, low-battery alerts, and a nearby alert when you open the case.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
-        <tr><td>Later</td><td>Custom EQ, sleep detection, case sounds, hearing protection and heart rate (Pro 3), custom stem presses, home-screen widget.</td><td class="st"><span class="pill">later</span></td></tr>
+        <tr><td>Head gestures</td><td>Demo mode with Yes and No on every device. On phones, nod to accept a call and shake to decline (Googlebooks have no phone calls, so the switch only appears on phones). Head motion is read only while the demo is open or a call rings.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
+        <tr><td>Quick Settings and notifications</td><td>A listening-mode tile; a tap opens a small panel window (third-party tiles get no built-in detail view). A silent notification while connected showing Left, Right and Case as three metrics (Android 17's MetricStyle), low-battery alerts, and a nearby alert when you open the case.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
+        <tr><td>Home-screen widget</td><td>Battery at a glance (Glance). The Googlebook launcher hosts widgets too.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
+        <tr><td>Later</td><td>Custom EQ, sleep detection, case sounds, hearing protection and heart rate (Pro 3), custom stem presses.</td><td class="st"><span class="pill">later</span></td></tr>
         <tr><td>Not possible without root</td><td>Hearing aid, transparency tuning, loud sound reduction, automatic switching between your devices.</td><td class="st"><span class="pill warn">no</span></td></tr>
       </tbody>
     </table>
@@ -173,9 +174,9 @@ footer { font-size: 0.85rem; color: var(--muted) }
   <div class="cols">
     <div class="note"><h3>One quiet window</h3><p>On a Googlebook, the AirPods sit on the left (battery, listening mode, two main switches) and settings on the right. The header row sits under the system caption, painted the same colour. Nothing floats.</p></div>
     <div class="note"><h3>Phone: one column</h3><p>The same pieces stacked. Sections open as pages. Taller rows, bigger targets.</p></div>
-    <div class="note"><h3>Tile and panel</h3><p>The tile shows the current mode and battery. A tap opens a small panel (the "subpage"), and a long-press opens PodLink.</p></div>
+    <div class="note"><h3>Tile and panel</h3><p>The tile shows the current mode and battery. A tap opens a small panel (the "subpage"), and a long-press opens HearOn Link.</p></div>
     <div class="note"><h3>Yes and No</h3><p>The demo's shape morphs into a scalloped Yes or a four-lobed No (Material 3 Expressive shapes). Live motion traces, counters and a sensitivity switch sit beside it.</p></div>
-    <div class="note"><h3>Colour and art</h3><p>Wallpaper colours where the device offers them, otherwise PodLink teal. The earbuds and case are our own simple drawing: no Apple images or fonts.</p></div>
+    <div class="note"><h3>Colour and art</h3><p>Wallpaper colours where the device offers them, otherwise HearOn Link teal. The earbuds and case are our own simple drawing: no Apple images or fonts.</p></div>
     <div class="note"><h3>Light touch</h3><p>No overlay permission and no accessibility service. Head motion only on demand. No internet permission.</p></div>
   </div>
 </section>
@@ -184,7 +185,7 @@ footer { font-size: 0.85rem; color: var(--muted) }
   <h2>Architecture</h2>
   <figure class="wide">
     <div class="diagram">
-      <svg viewBox="0 0 960 640" role="img" aria-label="PodLink layers: surfaces, the PodLink service, pure Kotlin core modules, Android Bluetooth, and the AirPods">
+      <svg viewBox="0 0 960 640" role="img" aria-label="HearOn Link layers: surfaces, the HearOn Link service, pure Kotlin core modules, Android Bluetooth, and the AirPods">
         <rect class="d-band" x="0" y="0" width="960" height="118" rx="18"/>
         <text class="d-l" x="20" y="30">WHAT YOU SEE</text>
         <rect class="d-box" x="180" y="18" width="180" height="82" rx="14"/><text class="d-t" x="196" y="50">App window</text><text class="d-s" x="196" y="72">Home, pages, demo,</text><text class="d-s" x="196" y="89">first run (Compose M3E)</text>
@@ -195,7 +196,7 @@ footer { font-size: 0.85rem; color: var(--muted) }
         <rect class="d-band" x="0" y="146" width="960" height="118" rx="18"/>
         <text class="d-l" x="20" y="176">BACKGROUND</text>
         <rect class="d-box hot" x="180" y="164" width="760" height="82" rx="14"/>
-        <text class="d-t d-hot" x="196" y="194">PodLink service: foreground, type connectedDevice, runs only while AirPods are connected</text>
+        <text class="d-t d-hot" x="196" y="194">HearOn Link service: foreground, type connectedDevice, runs only while AirPods are connected</text>
         <text class="d-s d-hot" x="196" y="218">Session state (one StateFlow per AirPods) · commands · pause on ear-out · duck while you talk</text>
         <text class="d-s d-hot" x="196" y="236">Head tracking on demand · calls: nod / shake (phones) · last-known battery store</text>
 
@@ -225,21 +226,21 @@ footer { font-size: 0.85rem; color: var(--muted) }
     <figcaption>State flows up from the AirPods to every surface; commands flow down. The protocol and gesture code has no Android dependencies, so it runs as plain JUnit tests on the Linux VM against packets recorded from your AirPods.</figcaption>
   </figure>
   <div class="cols">
-    <div class="note"><h3>Stack</h3><p>Kotlin, Jetpack Compose, Material 3 Expressive (material3 1.5 alpha, pinned like Summa), Material 3 Adaptive for the two-pane layout, DataStore. Package <code>io.github.kuscher.podlink</code>, target SDK 37, one APK for x86_64 and Arm (no native code).</p></div>
+    <div class="note"><h3>Stack</h3><p>Kotlin, Jetpack Compose, Material 3 Expressive (material3 1.5 alpha, pinned like Summa), Material 3 Adaptive for the two-pane layout, DataStore. Package <code>io.github.kuscher.hearonlink</code>, target SDK 37, one APK for x86_64 and Arm (no native code).</p></div>
     <div class="note"><h3>Permissions</h3><p>Nearby devices (connect, and scan without location), notifications, foreground service for connected devices, companion device presence. On phones, optionally answer calls. No internet, no overlays, no accessibility service.</p></div>
-    <div class="note"><h3>Connection flow</h3><p>AirPods connect → the companion-device presence event starts the service → open the channel → handshake → subscribe → state reaches the UI, tile and notification. On disconnect the service stops and keeps the last-known battery.</p></div>
-    <div class="note"><h3>Clean room</h3><p>LibrePods is GPL-3.0. PodLink's code is our own, written from protocol facts (byte layouts and opcodes) and our own packet captures, with LibrePods credited for the research. No code, docs text, fonts or images copied.</p></div>
+    <div class="note"><h3>Connection flow</h3><p>You pick your AirPods once in Android's companion-device dialog (which also grants Nearby devices). When they connect, Android's presence event starts the service, even from the background. It opens the channel, handshakes and subscribes, and state reaches the UI, tile, notification and widget. On disconnect the service stops and keeps the last-known battery.</p></div>
+    <div class="note"><h3>MIT, clean room</h3><p>LibrePods is GPL-3.0. HearOn Link is MIT: our own code, written from protocol facts (byte layouts and opcodes) and our own packet captures, with LibrePods credited for the research. No code, docs text, fonts or images copied.</p></div>
   </div>
 </section>
 
 <section id="workflow">
   <h2>Build, test, back up</h2>
   <ul class="plain">
-    <li>A <code>./podlink</code> helper builds, installs and drives the app on the HP over the Terminal's adb socket, like <code>./summa</code>. Nothing launches or steals focus while you're working.</li>
+    <li>A <code>./hol</code> helper builds, installs and drives the app on the HP over the Terminal's adb socket, like <code>./summa</code>. Nothing launches or steals focus while you're working.</li>
     <li>Protocol and gesture tests run on the VM. Device checks run on the HP (Arm) and the ASUS (x86_64). No emulators on the VM.</li>
     <li>GitHub Actions runs the tests and a debug build on every push. Releases are signed builds from a <code>v*</code> tag with the APK and SHA-256 attached.</li>
-    <li>Commit and push to <code>kuscher/podlink</code> (private) at every milestone. The release key lives in <code>~/.config/podlink</code> with a copy in private storage, never in git.</li>
-    <li>Publishing: GitHub releases first, then googlebook.studio, then a Google Play kit (listing, screenshots, data safety) like Summa's.</li>
+    <li>Commit and push to <code>kuscher/hearonlink</code> (private) at every milestone. The release key lives in <code>~/.config/hearonlink</code> with a copy in private storage, never in git.</li>
+    <li>Publishing: GitHub releases first, then your googlebook.studio showcase, then a Google Play kit (listing, screenshots, data safety, the connected-device service video) like Summa's. Register the package and key for developer verification before 2027.</li>
   </ul>
 </section>
 
@@ -247,9 +248,9 @@ footer { font-size: 0.85rem; color: var(--muted) }
   <h2>Phases</h2>
   <ol class="phases">
     <li><span class="when">0 · done</span><span class="what"><b>Feasibility</b><span>Channel without root, state dump, head motion at 25 Hz. Still to do: one listening-mode write, reconnect after sleep, the ASUS x86_64 check.</span></span></li>
-    <li><span class="when">1 · ~2 days</span><span class="what"><b>Foundations</b><span>Gradle project, <code>:aap</code> and <code>:gestures</code> with tests from recorded packets, the control-channel transport and session, service and notification skeleton, <code>./podlink</code>, CI.</span></span></li>
+    <li><span class="when">1 · ~2 days</span><span class="what"><b>Foundations</b><span>Gradle project, <code>:aap</code> and <code>:gestures</code> with tests from recorded packets, the control-channel transport and session, service and notification skeleton, <code>./hol</code>, CI.</span></span></li>
     <li><span class="when">2 · ~3 days</span><span class="what"><b>The app</b><span>Home, Noise control, Press and hold, Ear detection and About pages, the adaptive two-pane layout, first run with the companion-device picker, app settings, theme and icon.</span></span></li>
-    <li><span class="when">3 · ~2 days</span><span class="what"><b>In the OS</b><span>Quick Settings tile and panel, notifications, start on connect, pause on ear-out, ducking while you talk, the case-opened-nearby alert over BLE.</span></span></li>
+    <li><span class="when">3 · ~2 days</span><span class="what"><b>In the OS</b><span>Quick Settings tile and panel, notifications, start on connect, pause on ear-out, ducking while you talk (Android 17 may ignore background volume changes, so test early), the case-opened-nearby alert over BLE, the widget.</span></span></li>
     <li><span class="when">4 · ~2 days</span><span class="what"><b>Head gestures</b><span>Sensor stream, our own nod/shake detector tuned on traces we record with you, the demo screen, call answering on phones.</span></span></li>
     <li><span class="when">5 · ~2 days</span><span class="what"><b>Ship v0.1</b><span>README in your passion-project style, screenshots, licences, privacy note, signed GitHub release, googlebook.studio and Play kits.</span></span></li>
   </ol>
@@ -263,10 +264,9 @@ footer { font-size: 0.85rem; color: var(--muted) }
       <tbody>
         <tr><td>The hidden socket call breaks in a future Android, or Play objects to it</td><td>Keep it in one small transport class. Watch AOSP for public classic-L2CAP support. Fall back to a battery-only mode over BLE.</td></tr>
         <tr><td>Older phones without Android 17's Bluetooth fix</td><td>Detect the failed channel, explain it, and keep battery and nearby alerts working over BLE.</td></tr>
-        <tr><td>AirPods firmware changes</td><td>Parse defensively, drive the UI from the capability list, and keep recorded packet traces as regression tests. Mid-September firmware makes the AirPods' hands-free link flap on all Android devices. That isn't ours to fix, but PodLink should say so rather than look broken.</td></tr>
+        <tr><td>AirPods firmware changes</td><td>Parse defensively, drive the UI from the capability list, and keep recorded packet traces as regression tests. Mid-September firmware makes the AirPods' hands-free link flap on all Android devices. That isn't ours to fix, but HearOn Link should say so rather than look broken.</td></tr>
         <tr><td>AirPods owned by your iPhone or Mac</td><td>Head motion flows only to the device the AirPods currently serve. Show "In use on another device" and never grab them without asking.</td></tr>
-        <tr><td>The name</td><td>"PodsLink – AirPods Battery" is on Play with over a million installs, one letter away and already advertising noise control and head gestures. pod.link is a podcast service, and a GitHub project "Podlink" (AirPods) started this month. HearLink is Philips' hearing-aid brand and app (Philips HearLink 2, 100k+ installs), and "AI EarLink" is an earbud companion on Play, so both are taken too. Renaming before the first release is cheap; "EarDeck" came up clear in a quick search.</td></tr>
-        <tr><td>Trademarks</td><td>"AirPods" only as a description ("for AirPods"), never in the app name, plus a clear non-affiliation note. No Apple images, fonts or animations, and avoid "Find My" and "Live Listen".</td></tr>
+                <tr><td>Trademarks</td><td>"AirPods" only as a description ("for AirPods"), never in the app name, plus a clear non-affiliation note. No Apple images, fonts or animations, and avoid "Find My" and "Live Listen".</td></tr>
         <tr><td>Another AirPods app holds the channel</td><td>Only one app at a time can open the control channel (CAPod and LibrePods block each other). Detect it and say which app to close, instead of failing silently.</td></tr>
         <tr><td>Battery drain</td><td>The service runs only while the AirPods are connected. Head motion streams only on demand. The BLE scan uses low power with a hardware filter.</td></tr>
       </tbody>

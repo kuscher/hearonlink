@@ -1,4 +1,4 @@
-# PodLink probe (throwaway)
+# HearOn Link probe (throwaway; was built as "PodLink probe")
 
 Feasibility probe: opens the AirPods' AAP channel (classic L2CAP PSM 0x1001) from a normal,
 unrooted app and hex-dumps the packets. Built without Gradle (`./build.sh`, aapt2 + javac + d8),

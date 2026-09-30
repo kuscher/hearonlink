@@ -91,7 +91,7 @@ The `librepods-org` org was created 2026-06-24 and has **one public repository**
 |---|---|---|
 | [tyalie/AAP-Protocol-Defintion](https://github.com/tyalie/AAP-Protocol-Defintion) | none (all rights reserved) | First AAP write-up (2021) |
 | [pabloaul/apple-wireshark](https://github.com/pabloaul/apple-wireshark) | GPL-3.0 | Wireshark dissectors for AAP and friends; README points here for the protocol |
-| [d4rken-org/capod](https://github.com/d4rken-org/capod) | GPL-3.0 | BLE-only AirPods companion; README recommends it for unsupported, unrooted phones |
+| [d4rken-org/capod](https://github.com/d4rken-org/capod) | GPL-3.0 (icons/docs/translations excluded) | AirPods companion: BLE, plus rootless AAP over L2CAP since 2026-03-30; LibrePods' README: "Use this if you're using Android version 16 QPR3 or below and are not rooted" |
 | [LSPosed/AndroidHiddenApiBypass](https://github.com/LSPosed/AndroidHiddenApiBypass) | Apache-2.0 | What our probe uses; safe to depend on |
 
 ---
@@ -547,10 +547,13 @@ It uses the **libxposed API 101** (LSPosed/Vector). The module scope is `com.and
     1. `l2c_fcr_chk_chan_modes(tL2C_CCB*)` → **`fake_l2c_fcr_chk_chan_modes` always returns 1**
        (after calling the original), so the stack no longer rejects the AirPods' channel for lacking ERTM support.
     2. `BTA_DmSetLocalDiRecord(tSDP_DI_RECORD*, uint32_t*)` → **rewrites `vendor = 0x004C`,
-       `vendor_id_source = 0x0001`** before calling the original: the Apple DID spoof. Note that the code
-       modifies the record unconditionally once hooked, and calls the original 2-3 times. Only the Java
-       gate decides whether the module is loaded at all. #700 reports that the systemized (root-module)
-       install applies it regardless of the preference.
+       `vendor_id_source = 0x0001`** before calling the original: the Apple DID spoof. As written the gating
+       looks buggy:
+       - the replacement *always* overwrites the vendor and registers the spoofed record (it calls the
+         original twice, once inside a log statement);
+       - `vendor_id_hook == true` only adds an extra call with the *unmodified* record first
+         (`l2c_fcr_hook.cpp` L58-79).
+       #700 reports the systemized install applies the hook regardless of the preference.
   - The ELF parsing is Elf64-only, so 32-bit stacks aren't handled (PR [#734](https://github.com/librepods-org/librepods/pull/734)).
 - PR [#785](https://github.com/librepods-org/librepods/pull/785) (open) adds a third hook,
   **`l2c_fcr_process_peer_cfg_req`**, turning its `DISCONNECT` verdict into `OK`. Its HCI trace shows the
@@ -633,8 +636,12 @@ and the [CAPod tracker #538](https://github.com/d4rken-org/capod/issues/538) (04
 | Still broken | Evidence |
 |---|---|
 | Samsung One UI 8/8.5 (A16) | S24+, S25U, S26U through 09-24; maintainer: "Samsung devices need OneUI 9" |
-| GrapheneOS A16, Pixel 10a (CP1A, conflicting), Fairphone 6 A16, Moto g stylus 2025 A16 ([#745](https://github.com/librepods-org/librepods/issues/745)) | 05-09 |
-| Nothing OS ([#672](https://github.com/librepods-org/librepods/issues/672)), Poco F7 Pro HyperOS 3.0 | 07-09 |
+| GrapheneOS A16 | builds 2026050701 and 2026061601 |
+| Pixel 10a on CP1A.260405.005 / .260505.005 | conflicts with the Pixel 10 Pro XL report above |
+| Fairphone 6, A16 | 09-29 |
+| Moto g stylus 2025, A16 | [#745](https://github.com/librepods-org/librepods/issues/745) (08-24) |
+| Nothing OS | [#672](https://github.com/librepods-org/librepods/issues/672) (07-17); Phone 4a Pro (09-08) |
+| Poco F7 Pro, HyperOS 3.0.303 | 09-21 |
 | Oppo Find X9, ColorOS 16.0.9, handshake never completes ([#726](https://github.com/librepods-org/librepods/issues/726)) | 08-14 |
 | realme UI 7 | no reports either way |
 
@@ -928,7 +935,6 @@ on the VM, which fits the "no local emulators" constraint.
   - `su` fallbacks.
 - **Security/privacy:** proximity keys are logged (PR #810), and an "APK signing certificate fingerprint"
   request is open (#802).
-
 - **Android 17 status.** The L2CAP fix is in AOSP A17 (section 4.4). The known A17-specific problems are
   the hook-induced disconnect cycling (#700) and the firmware-induced HFP flap and Apple-DID drops (#782).
   LibrePods targets and compiles against SDK 37.

@@ -124,7 +124,7 @@ side = (f'<aside style="width: 380px; flex-shrink: 0; background: {t["chrome"]};
         + f'<div style="display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; background: {t["card"]}; border-radius: 22px"><div style="font-size: 15.5px; font-weight: 600">Sensitivity</div>{segmented(t, ["Gentle", "Normal", "Firm"], "Normal")}</div>'
         + f'<div style="font-size: 13px; line-height: 19px; color: {t["text2"]}; padding: 0 6px">Head motion stops when you leave this screen.</div></aside>')
 board("Demo.dc.html", "Googlebook · head-gesture demo (click the shape)", 0, 1400, 1280, 800, page(
-    "PodLink head-gesture demo", 1280, 800,
+    "HearOn Link head-gesture demo", 1280, 800,
     desktop(t, hdr, f'<main style="flex-grow: 1; display: flex; align-items: center; justify-content: center">{stage(t, 400)}</main>' + side),
     props=DEMO_PROPS("yes"), script=DEMO_JS % "yes"), interactive=True)
 
@@ -143,11 +143,11 @@ def phone_top_home(t, status="Connected", on=True):
             f'<button aria-label="Choose AirPods" style="display: flex; align-items: center; gap: 2px; height: 32px; padding: 0 6px 0 8px; border: none; border-radius: 999px; background: transparent; color: {t["text"]}">'
             f'<span style="font-size: 20px; font-weight: 700">AirPods Pro</span><span style="display: flex; color: {t["text2"]}">{ic("down", 20)}</span></button>'
             f'<div style="padding-left: 8px">{status_dot(t, status, on)}</div></div>'
-            + iconbtn(t, "tune", "PodLink settings", 48) + iconbtn(t, "more", "More", 48))
+            + iconbtn(t, "tune", "HearOn Link settings", 48) + iconbtn(t, "more", "More", 48))
 
 
 NAV = [dict(title="Noise control", sub="Press and hold, one-AirPod mode", lead="m_nc", href="PhonePage.dc.html"),
-       dict(title="Head gestures", sub="On · Nod to accept, shake to decline", lead="head", href="PhoneDemo.dc.html"),
+       dict(title="Head gestures", sub="On · Nod to answer calls, shake to decline", lead="head", href="PhoneDemo.dc.html"),
        dict(title="Ear detection", sub="Pause when you take one out", lead="ear", href=True),
        dict(title="Press and hold", sub="Both AirPods: noise control", lead="hold", href=True),
        dict(title="About these AirPods", sub="Name, model, firmware", lead="info", href=True)]
@@ -161,7 +161,7 @@ home_body = (f'<div style="display: flex; justify-content: center">{pods_svg(t, 
                          dict(title="Personalized volume", trail=switch(t, False, "Personalized volume"))])
              + group(t, NAV))
 board("PhoneHome.dc.html", "Phone · home (tap the modes)", 0, 2800, 390, PH, page(
-    "PodLink on a phone", 390, PH, phone(t, phone_top_home(t), home_body), script=mode_script("nc")), interactive=True)
+    "HearOn Link on a phone", 390, PH, phone(t, phone_top_home(t), home_body), script=mode_script("nc")), interactive=True)
 
 sub_top = lambda t, title: (iconbtn(t, "back", "Back", 48) + f'<div style="flex-grow: 1; font-size: 20px; font-weight: 700; padding-left: 2px">{title}</div>' + iconbtn(t, "more", "More", 48))
 check = lambda t, on: (f'<span role="checkbox" aria-checked="{"true" if on else "false"}" style="width: 22px; height: 22px; flex-shrink: 0; box-sizing: border-box; border-radius: 6px; display: flex; align-items: center; justify-content: center; '
@@ -171,13 +171,13 @@ page_body = (f'<div style="font-size: 15px; line-height: 22px; color: {t["text2"
              + group(t, [dict(title="Noise Cancellation with one AirPod", trail=switch(t, False, "Noise Cancellation with one AirPod")),
                          dict(title="Adaptive audio", sub=slider(t, 50, "Less noise", "More noise", "Adaptive audio level"), min_h=96, pad="14px 20px")], "More"))
 board("PhonePage.dc.html", "Phone · Noise control page", 470, 2800, 390, PH, page(
-    "PodLink noise control page", 390, PH, phone(t, sub_top(t, "Noise control"), page_body)))
+    "HearOn Link noise control page", 390, PH, phone(t, sub_top(t, "Noise control"), page_body)))
 
 t = DARK
 demo_body = (f'<div style="display: flex; justify-content: center; padding-top: 6px">{stage(t, 300)}</div>'
              + tally(t) + motion_card(t, 318, 44))
 board("PhoneDemo.dc.html", "Phone · head-gesture demo (dark)", 940, 2800, 390, PH, page(
-    "PodLink head-gesture demo on a phone", 390, PH,
+    "HearOn Link head-gesture demo on a phone", 390, PH,
     phone(t, iconbtn(t, "back", "Back", 48) + f'<div style="flex-grow: 1; font-size: 20px; font-weight: 700; padding-left: 2px">Try head gestures</div>' + text_btn(t, "Done"), demo_body),
     props=DEMO_PROPS("no"), script=DEMO_JS % "no"), interactive=True)
 
@@ -190,7 +190,7 @@ away_body = (f'<div style="display: flex; justify-content: center">{pods_svg(t, 
                f'<div style="display: flex">{tonal_btn(t, "Bluetooth settings", "open")}</div></div>'
              + f'<div style="opacity: 0.45">{group(t, NAV[:3])}</div>')
 board("PhoneAway.dc.html", "Phone · not connected", 1410, 2800, 390, PH, page(
-    "PodLink when the AirPods are away", 390, PH, phone(t, phone_top_home(t, "Not connected", False), away_body)))
+    "HearOn Link when the AirPods are away", 390, PH, phone(t, phone_top_home(t, "Not connected", False), away_body)))
 
 # ---------------------------------------------------------------- Quick Settings: tile + panel
 t = LIGHT
@@ -216,7 +216,7 @@ qs_panel = (f'<div style="width: 440px; display: flex; flex-direction: column; g
             + tile(t, "m_nc", "Noise Cancellation", "AirPods Pro · 100%", "on", 198) + tile(t, "moon", "Do Not Disturb", "Off", "off", 198)
             + "</div></div>")
 states = (f'<div style="display: flex; flex-direction: column; gap: 10px">'
-          f'<div style="font-size: 13px; font-weight: 650; color: {t["text2"]}">The PodLink tile</div>'
+          f'<div style="font-size: 13px; font-weight: 650; color: {t["text2"]}">The HearOn Link tile</div>'
           + tile(t, "m_nc", "Noise Cancellation", "AirPods Pro · 100%", "on", 230)
           + tile(t, "m_tr", "Transparency", "AirPods Pro · 100%", "on", 230)
           + tile(t, "m_ad", "Adaptive", "AirPods Pro · 100%", "on", 230)
@@ -228,14 +228,14 @@ panel = (f'<div role="dialog" aria-label="AirPods Pro" style="width: 400px; disp
          + battery_trio(t, (("Left", 100, False, "In ear"), ("Case", 72, True, "Charging"), ("Right", 100, False, "In ear")), big=20)
          + mode_group(t, "nc", h=68, font=11)
          + group(t, [dict(title="Conversation awareness", trail=switch(t, True, "Conversation awareness"), min_h=56)])
-         + f'<div style="display: flex; justify-content: space-between">{text_btn(t, "Open PodLink")}{tonal_btn(t, "Done", h=40)}</div></div>')
+         + f'<div style="display: flex; justify-content: space-between">{text_btn(t, "Open HearOn Link")}{tonal_btn(t, "Done", h=40)}</div></div>')
 board("QS.dc.html", "Quick Settings tile and its panel", 1360, 1400, 1280, 800, page(
-    "PodLink in Quick Settings", 1280, 800,
+    "HearOn Link in Quick Settings", 1280, 800,
     f'<div style="width: 1280px; height: 800px; display: flex; align-items: flex-start; gap: 48px; padding: 56px; box-sizing: border-box; background: {t["page"]}; color: {t["text"]}">'
     + qs_panel + states + panel + "</div>"))
 
 # ---------------------------------------------------------------- notifications
-def notif(t, title, text, actions, sub="PodLink · AirPods Pro", w=460, extra=""):
+def notif(t, title, text, actions, sub="HearOn Link · AirPods Pro", w=460, extra=""):
     acts = "".join(f'<button style="height: 36px; padding: 0 12px; border: none; border-radius: 999px; background: {t["sc"] if i == 0 else "transparent"}; color: {t["onSc"] if i == 0 else t["primary"]}; font-size: 13.5px; font-weight: 620">{a}</button>' for i, a in enumerate(actions))
     return (f'<article style="width: {w}px; display: flex; flex-direction: column; gap: 10px; padding: 16px 18px 12px; box-sizing: border-box; background: {t["card"]}; border-radius: 24px; box-shadow: 0 1px 3px rgba(0,40,40,0.10)">'
             f'<div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: {t["text2"]}"><span style="width: 22px; height: 22px; border-radius: 99px; background: {t["primary"]}; color: {t["onPrimary"]}; display: flex; align-items: center; justify-content: center">{ic("m_nc", 14)}</span>{sub}</div>'
@@ -255,7 +255,7 @@ nt = (f'<div style="width: 1280px; height: 560px; display: flex; gap: 40px; padd
       + '<div style="display: flex; flex-direction: column; gap: 14px">'
       + f'<div style="font-size: 13px; font-weight: 650; color: {t["text2"]}">Case opened nearby, not connected</div>'
       + notif(t, "Your AirPods Pro are nearby", "Left 98% · Right 97% · Case 64%", ["Connect", "Not now"], extra="") + "</div></div>")
-board("Notify.dc.html", "Notifications", 2720, 1400, 1280, 560, page("PodLink notifications", 1280, 560, nt))
+board("Notify.dc.html", "Notifications", 2720, 1400, 1280, 560, page("HearOn Link notifications", 1280, 560, nt))
 
 # ---------------------------------------------------------------- first run (desktop)
 def step(t, n, title, text, state, action=""):
@@ -275,21 +275,21 @@ t = LIGHT
 ob = (f'<div style="width: 560px; display: flex; flex-direction: column; gap: 10px">'
       f'<div style="display: flex; justify-content: center">{pods_svg(t, 230)}</div>'
       f'<div style="font-size: 30px; line-height: 36px; font-weight: 740; text-align: center; letter-spacing: -0.01em">Set up your AirPods</div>'
-      f'<div style="font-size: 15.5px; line-height: 23px; color: {t["text2"]}; text-align: center; padding-bottom: 12px">Three quick steps. Nothing leaves this Googlebook.</div>'
+      f'<div style="font-size: 15.5px; line-height: 23px; color: {t["text2"]}; text-align: center; padding-bottom: 12px">A few quick steps. Nothing leaves this Googlebook.</div>'
       + step(t, 1, "Allow Nearby devices", "", "done")
-      + step(t, 2, "Choose your AirPods", "Pick them from the system list. PodLink talks only to the AirPods you choose.", "now", tonal_btn(t, "Choose AirPods", "bt", filled=True))
+      + step(t, 2, "Choose your AirPods", "Pick them from the system list. HearOn Link talks only to the AirPods you choose.", "now", tonal_btn(t, "Choose AirPods", "bt", filled=True))
       + step(t, 3, "Add the Quick Settings tile", "", "later")
       + step(t, 4, "Battery notification", "", "later")
       + f'<div style="display: flex; justify-content: center; padding-top: 8px">{text_btn(t, "Skip for now", t["text2"])}</div></div>')
 board("Onboarding.dc.html", "First run", 2720, 0, 1280, 800, page(
-    "PodLink first run", 1280, 800,
+    "HearOn Link first run", 1280, 800,
     f'<div style="width: 1280px; height: 800px; display: flex; flex-direction: column; background: {t["page"]}; color: {t["text"]}; overflow: hidden">'
     + caption(t) + f'<main style="flex-grow: 1; display: flex; justify-content: center; padding-top: 16px">{ob}</main></div>'))
 
-note("t-desk", -1360, -300, "PodLink on a Googlebook", kind="title1", maxW=5360)
+note("t-desk", -1360, -300, "HearOn Link on a Googlebook", kind="title1", maxW=5360)
 note("t-os", 0, 1100, "Head gestures and the OS", kind="title1", maxW=4000)
 note("t-phone", 0, 2500, "On a phone", kind="title1", maxW=1800)
-note("n-qs", 2720, 2010, "Tile tap opens the panel (the subpage). Long-press opens PodLink. A setting can make a tap cycle the press-and-hold modes instead.", w=340, color="teal")
+note("n-qs", 2720, 2010, "Tile tap opens the panel (the subpage). Long-press opens HearOn Link. A setting can make a tap cycle the press-and-hold modes instead.", w=340, color="teal")
 note("n-demo", 3100, 2010, "Click the shape in Play to step through listening → Yes → No. The Tweaks tab has the same states.", w=360, color="teal")
 
 # ---------------------------------------------------------------- spec board
@@ -335,7 +335,7 @@ def swatch(hexv, name, fg="#FFFFFF"):
 
 
 def app_icon(bg, fg, size=132):
-    return (f'<svg width="{size}" height="{size}" viewBox="0 0 108 108" aria-label="PodLink icon draft" role="img">'
+    return (f'<svg width="{size}" height="{size}" viewBox="0 0 108 108" aria-label="HearOn Link icon draft" role="img">'
             f'<rect width="108" height="108" rx="30" fill="{bg}"/>'
             f'<g fill="none" stroke="{fg}" stroke-width="9" stroke-linecap="round" transform="rotate(-38 54 54)">'
             f'<rect x="20" y="40" width="46" height="28" rx="14"/><rect x="42" y="40" width="46" height="28" rx="14"/></g>'
@@ -345,7 +345,7 @@ def app_icon(bg, fg, size=132):
 spec = (f'<div style="width: 1280px; height: 1000px; box-sizing: border-box; padding: 48px 56px; display: flex; flex-direction: column; gap: 34px; background: {t["page"]}; color: {t["text"]}">'
         f'<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 40px">'
         f'<div style="display: flex; flex-direction: column; gap: 8px"><div style="font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: {t["primary"]}">DESIGN SPEC · DRAFT 1</div>'
-        f'<div style="font-size: 46px; line-height: 50px; font-weight: 780; letter-spacing: -0.02em">PodLink</div>'
+        f'<div style="font-size: 46px; line-height: 50px; font-weight: 780; letter-spacing: -0.02em">HearOn Link</div>'
         f'<div style="font-size: 17px; line-height: 25px; color: {t["text2"]}; max-width: 640px">A calm companion for AirPods on Googlebooks and phones. One window, one tile, one notification. Material 3 Expressive where it counts: the listening-mode buttons and the Yes / No moment.</div></div>'
         f'<div style="display: flex; gap: 14px">{app_icon(t["primary"], "#FFFFFF")}{app_icon("#E8F0EE", t["primary"])}{app_icon("#0F1514", DARK["primary"])}</div></div>'
         f'<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px">'
@@ -363,4 +363,4 @@ spec = (f'<div style="width: 1280px; height: 1000px; box-sizing: border-box; pad
         f'<div style="display: flex; gap: 8px; flex-shrink: 0"><svg width="54" height="54" viewBox="-125 -125 250 250" aria-hidden="true"><path d="{blob(9, 0.055, 100)}" fill="{t["pc"]}"/></svg><svg width="54" height="54" viewBox="-125 -125 250 250" aria-hidden="true"><path d="{blob(4, 0.13, 96)}" fill="{t["noC"]}"/></svg></div></div></div></div>'
         f'<div style="display: flex; flex-direction: column; gap: 12px"><div style="font-size: 14px; font-weight: 650; color: {t["primary"]}">Per model (from the AirPods\' own capability list; models per LibrePods\' research)</div>{table}</div>'
         + "</div>")
-board("Spec.dc.html", "Spec: principles, look, icon, per-model features", -1360, 0, 1280, 1000, page("PodLink design spec", 1280, 1000, spec))
+board("Spec.dc.html", "Spec: principles, look, icon, per-model features", -1360, 0, 1280, 1000, page("HearOn Link design spec", 1280, 1000, spec))

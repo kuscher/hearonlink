@@ -25,8 +25,7 @@ def settings_column(t, width=680, demo_href="Demo.dc.html"):
                 dict(title="Noise Cancellation with one AirPod", sub="Keep noise control on when you wear only one", trail=switch(t, False, "Noise Cancellation with one AirPod")),
             ], "Noise control")
             + group(t, [
-                dict(title="Head gestures", sub="Nod to accept a call, shake your head to decline", trail=switch(t, True, "Head gestures"), lead="head"),
-                dict(title="Try it", sub="See your nods and shakes live", lead="play", href=demo_href),
+                dict(title="Try head gestures", sub="Nod for yes, shake for no, live. Answering calls this way works on phones.", lead="head", href=demo_href),
             ], "Head gestures")
             + group(t, [
                 dict(title="Pause when you take an AirPod out", sub="Plays again when you put it back in", trail=switch(t, True, "Automatic ear detection"), lead="ear"),
@@ -65,13 +64,13 @@ def desktop(t, header, body, w=1280, h=800):
 
 def home_header(t):
     return (device_switch(t) + '<div style="flex-grow: 1"></div>'
-            + iconbtn(t, "tune", "PodLink settings") + iconbtn(t, "more", "More"))
+            + iconbtn(t, "tune", "HearOn Link settings") + iconbtn(t, "more", "More"))
 
 
 # ---------------------------------------------------------------- desktop home
 t = LIGHT
 board("Main.dc.html", "Googlebook · home (light)", 0, 0, 1280, 800, page(
-    "PodLink on a Googlebook", 1280, 800,
+    "HearOn Link on a Googlebook", 1280, 800,
     desktop(t, home_header(t),
             device_pane(t, sel="tr", holes=True, show_adaptive=True)
             + f'<main style="flex-grow: 1; min-width: 0; overflow: hidden; display: flex; justify-content: center; padding: 20px 40px">{settings_column(t)}</main>'),
@@ -84,12 +83,11 @@ sub_header = (iconbtn(t, "back", "Back") + f'<div style="font-size: 15px; font-w
 gest_page = (f'<div style="width: 680px; display: flex; flex-direction: column; gap: 26px">'
              + f'<div style="display: flex; align-items: center; gap: 24px; padding: 8px 4px 0">'
                f'<div style="width: 96px; height: 96px; flex-shrink: 0; border-radius: 32px; background: {t["pc"]}; color: {t["onPc"]}; display: flex; align-items: center; justify-content: center">{ic("head", 48, 1.8)}</div>'
-               f'<div style="display: flex; flex-direction: column; gap: 6px"><div style="font-size: 26px; line-height: 32px; font-weight: 720">Answer with a nod</div>'
-               f'<div style="font-size: 15px; line-height: 22px; color: {t["text2"]}">When a call rings, nod to accept it or shake your head to decline. PodLink listens to head motion only while a call rings or the demo is open.</div></div></div>'
+               f'<div style="display: flex; flex-direction: column; gap: 6px"><div style="font-size: 26px; line-height: 32px; font-weight: 720">Nod for yes, shake for no</div>'
+               f'<div style="font-size: 15px; line-height: 22px; color: {t["text2"]}">Your AirPods Pro feel how your head moves. Try it here. On a phone, HearOn Link can answer and decline calls this way. Head motion is read only while the demo is open or a call rings.</div></div></div>'
              + group(t, [
-                 dict(title="Head gestures", trail=switch(t, True, "Head gestures")),
-                 dict(title="Nod", sub="Accept the call", lead="check"),
-                 dict(title="Shake", sub="Decline the call", lead="close"),
+                 dict(title="Nod", sub="Yes: accept a call on your phone", lead="check"),
+                 dict(title="Shake", sub="No: decline it", lead="close"),
              ])
              + group(t, [
                  dict(title="Sensitivity", sub='<span style="display: flex; gap: 3px; padding-top: 10px">'
@@ -100,7 +98,7 @@ gest_page = (f'<div style="width: 680px; display: flex; flex-direction: column; 
              + f'<div style="display: flex; gap: 12px">{tonal_btn(t, "Try it", "play", href="Demo.dc.html", filled=True)}</div>'
              + "</div>")
 board("Detail.dc.html", "Googlebook · a subpage (dark)", 1360, 0, 1280, 800, page(
-    "PodLink head gestures page, dark", 1280, 800,
+    "HearOn Link head gestures page, dark", 1280, 800,
     desktop(t, sub_header,
             device_pane(t, sel="nc")
             + f'<main style="flex-grow: 1; min-width: 0; overflow: hidden; display: flex; justify-content: center; padding: 20px 40px">{gest_page}</main>')))
