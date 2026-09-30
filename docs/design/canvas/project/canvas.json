@@ -1,0 +1,146 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-09-30T18:18:21Z"
+ },
+ "title": "PodLink design",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1280,
+   "h": 800,
+   "title": "Googlebook \u00b7 home (light)",
+   "is_interactive": true
+  },
+  "Detail.dc.html": {
+   "x": 1360,
+   "y": 0,
+   "w": 1280,
+   "h": 800,
+   "title": "Googlebook \u00b7 a subpage (dark)"
+  },
+  "Demo.dc.html": {
+   "x": 0,
+   "y": 1400,
+   "w": 1280,
+   "h": 800,
+   "title": "Googlebook \u00b7 head-gesture demo (click the shape)",
+   "is_interactive": true
+  },
+  "PhoneHome.dc.html": {
+   "x": 0,
+   "y": 2800,
+   "w": 390,
+   "h": 844,
+   "title": "Phone \u00b7 home (tap the modes)",
+   "is_interactive": true
+  },
+  "PhonePage.dc.html": {
+   "x": 470,
+   "y": 2800,
+   "w": 390,
+   "h": 844,
+   "title": "Phone \u00b7 Noise control page"
+  },
+  "PhoneDemo.dc.html": {
+   "x": 940,
+   "y": 2800,
+   "w": 390,
+   "h": 844,
+   "title": "Phone \u00b7 head-gesture demo (dark)",
+   "is_interactive": true
+  },
+  "PhoneAway.dc.html": {
+   "x": 1410,
+   "y": 2800,
+   "w": 390,
+   "h": 844,
+   "title": "Phone \u00b7 not connected"
+  },
+  "QS.dc.html": {
+   "x": 1360,
+   "y": 1400,
+   "w": 1280,
+   "h": 800,
+   "title": "Quick Settings tile and its panel"
+  },
+  "Notify.dc.html": {
+   "x": 2720,
+   "y": 1400,
+   "w": 1280,
+   "h": 560,
+   "title": "Notifications"
+  },
+  "Onboarding.dc.html": {
+   "x": 2720,
+   "y": 0,
+   "w": 1280,
+   "h": 800,
+   "title": "First run"
+  },
+  "Spec.dc.html": {
+   "x": -1360,
+   "y": 0,
+   "w": 1280,
+   "h": 1000,
+   "title": "Spec: principles, look, icon, per-model features"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Detail.dc.html",
+  "Demo.dc.html",
+  "PhoneHome.dc.html",
+  "PhonePage.dc.html",
+  "PhoneDemo.dc.html",
+  "PhoneAway.dc.html",
+  "QS.dc.html",
+  "Notify.dc.html",
+  "Onboarding.dc.html",
+  "Spec.dc.html"
+ ],
+ "notes": {
+  "t-desk": {
+   "x": -1360,
+   "y": -300,
+   "text": "PodLink on a Googlebook",
+   "kind": "title1",
+   "maxW": 5360
+  },
+  "t-os": {
+   "x": 0,
+   "y": 1100,
+   "text": "Head gestures and the OS",
+   "kind": "title1",
+   "maxW": 4000
+  },
+  "t-phone": {
+   "x": 0,
+   "y": 2500,
+   "text": "On a phone",
+   "kind": "title1",
+   "maxW": 1800
+  },
+  "n-qs": {
+   "x": 2720,
+   "y": 2010,
+   "text": "Tile tap opens the panel (the subpage). Long-press opens PodLink. A setting can make a tap cycle the press-and-hold modes instead.",
+   "w": 340,
+   "fill": "teal"
+  },
+  "n-demo": {
+   "x": 3100,
+   "y": 2010,
+   "text": "Click the shape in Play to step through listening \u2192 Yes \u2192 No. The Tweaks tab has the same states.",
+   "w": 360,
+   "fill": "teal"
+  }
+ },
+ "designSystems": []
+}

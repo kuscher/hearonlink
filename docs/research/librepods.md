@@ -426,6 +426,9 @@ SensorServiceType: ACCEL 11, GYRO 12, PDR 13, ACTIVITY 14, CMA 15, DEVMOTION6 16
     L2198). These shift by one whenever the protobuf `seq` varint changes length.
     [#719](https://github.com/librepods-org/librepods/issues/719) recommends protobuf-relative parsing.
   - Example frame from #133: `04 00 04 00 17 00 | 00 00 10 00 | 44 00 | 08 0f 10 01 3a 3e 08 0e 1a 3a | <58-byte payload>`.
+  - **Confirmed on our unrooted HP Googlebook** ([device-findings.md](device-findings.md)): the DEVMOTION6 start
+    gets a `start_ack` (field 9, service 16) after ~30 ms. It then streams 80-byte frames at ≈ 25 Hz
+    (181 in 7.1 s), which stop on the interval-0 packet.
 - **Orientation math** (`main` `utils/HeadOrientation.kt`, ported from `head-tracking/head_orientation.py`):
   calibrate on the first 10 samples (neutral = mean of (o + 5500)), then
   `pitch = (o2n + o3n)/2/32000*180` and `yaw = (o2n − o3n)/2/32000*180`. This is empirical, not real Euler angles.
