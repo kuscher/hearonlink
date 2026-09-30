@@ -1,0 +1,21 @@
+package io.github.kuscher.hearonlink
+
+import android.app.Application
+import android.content.Context
+import io.github.kuscher.hearonlink.data.Prefs
+import io.github.kuscher.hearonlink.link.Link
+import io.github.kuscher.hearonlink.system.Notifications
+
+class HearOnApp : Application() {
+    lateinit var prefs: Prefs; private set
+    lateinit var link: Link; private set
+
+    override fun onCreate() {
+        super.onCreate()
+        prefs = Prefs(this)
+        link = Link(this, prefs)
+        Notifications.createChannels(this)
+    }
+}
+
+val Context.hearOn: HearOnApp get() = applicationContext as HearOnApp

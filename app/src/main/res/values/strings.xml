@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HearOn Link</string>
+    <string name="tile_label">Listening mode</string>
+    <string name="widget_label">AirPods battery</string>
+    <string name="widget_description">Battery for your AirPods and their case</string>
+</resources>
