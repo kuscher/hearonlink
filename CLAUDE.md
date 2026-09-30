@@ -7,12 +7,16 @@ never copy LibrePods (GPL-3.0) code, prose, fonts or images; byte layouts/opcode
 ## Layout
 - `core/` pure Kotlin, JUnit on the VM (`./hol test`):
   `aap/` Aap.kt (framing, builders, control ids, ListeningMode), AapEvent.kt (parser), PodState.kt
-  (state + reducer), Models.kt (model numbers / BLE product ids → Family + Feature), Proto.kt (tiny
-  protobuf for sensor messages); `gestures/HeadGestures.kt` (nod/shake detector, our own design);
+  (state + reducer), Models.kt (model numbers / BLE product ids → Family + Feature, incl. Beats),
+  BatteryCache.kt (per-part last known level with time/source/live), Proto.kt (tiny protobuf for sensor
+  messages); `gestures/HeadGestures.kt` (nod/shake detector, our own design), `gestures/Calibration.kt`
+  (finds the nod/shake int16 offsets and scale from recorded frames);
   `ble/Proximity.kt` (proximity advert parse, AES decrypt, RPA resolve).
 - `app/` package `io.github.kuscher.hearonlink`:
   `link/` AapConnection.kt (L2cap: hidden createL2capSocket via HiddenApiBypass; session), Link.kt
-  (app-wide hub: StateFlow<LinkState>, commands, head tracking ref-count), Reactions.kt (ear pause/resume,
+  (app-wide hub: StateFlow<LinkState> with pod + DeviceCache + Batteries, commands, sensor streams by owner),
+  Controls.kt (stem-press forwarding 0x39 + actions, head gestures anytime, nod/shake for calls on phones),
+  Actions.kt (Action list, performer, SystemActions accessibility service), Reactions.kt (ear pause/resume,
   ducking while talking, low battery; HeadMotion decode offsets), LinkService.kt (FGS connectedDevice +
   PresenceService (CDM) + BtReceiver), Nearby.kt (PendingIntent BLE scan + Companion association helpers).
   `system/` Notifications.kt (+ Actions receiver), ModeTile.kt (tile + Glance BatteryWidget).
@@ -41,10 +45,20 @@ never copy LibrePods (GPL-3.0) code, prose, fonts or images; byte layouts/opcode
 - Control writes are applied but NOT echoed: update state optimistically.
 - Listening-mode writes seem ignored while both buds are out of ear.
 - Head tracking: DEVMOTION6 (service 16) when firmware build starts with ≥8, else ACTIVITY (14); 25 Hz.
-  HeadMotion offsets (30 up/down, 28 sideways) are from public notes and still need a recorded trace.
+  Offsets default to 30 up/down, 28 sideways (public notes); the demo's Calibrate stores measured ones.
+- Custom stem presses: control 0x39 = mask of forwarded presses (only customised ones), events op 0x19.
+  Unverified: whether the mask survives when the AirPods move to another device (keep defaults = none).
+- Custom EQ (op 0x63) shows only after the AirPods report it; the flags byte is echoed back unchanged.
 
 ## Design rules (canvas https://claude.ai/artifact/TPTz5wiH4FfdQvC5mhV1bu, approved direction)
 - Nothing floats; header row below the system caption, caption painted the same colour.
 - Googlebook ≥840 dp: device pane left (452 dp, chrome colour), settings right (max 680 dp).
 - Only show what the AirPods support (Family features + reported controls). Root-only features never show.
-- No INTERNET permission, no overlays, no accessibility service. Head motion only on demand.
+- No INTERNET permission, no overlays. The accessibility service (SystemActions) only performs global
+  actions (Home, Overview, Back, Notifications, QS, Screenshot, Lock): no event types, no window content,
+  and it's off until the user turns it on for a system action. Peek itself is a WM key gesture
+  (TOGGLE_DESKTOP_HOME_SCREEN_PEEK) apps can't send; "Show desktop (peek)" uses GLOBAL_ACTION_HOME.
+- Head motion streams only for owners: the demo, a ringing call (phones), or "gestures anytime" (opt-in,
+  only while a bud is in an ear). The demo pauses anytime actions (Controls.demoOpen).
+- Battery shows the cache: live parts normal, others faded with their age. Never wipe a level on a
+  "disconnected" report.
