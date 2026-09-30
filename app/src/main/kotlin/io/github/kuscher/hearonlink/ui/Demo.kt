@@ -55,7 +55,11 @@ import androidx.compose.ui.unit.sp
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import io.github.kuscher.hearonlink.R
+import io.github.kuscher.hearonlink.aap.Aap
+import io.github.kuscher.hearonlink.aap.AapEvent
 import io.github.kuscher.hearonlink.data.Settings
+import io.github.kuscher.hearonlink.gestures.Calibration
+import io.github.kuscher.hearonlink.hearOn
 import io.github.kuscher.hearonlink.gestures.Gesture
 import io.github.kuscher.hearonlink.gestures.HeadGestureDetector
 import io.github.kuscher.hearonlink.gestures.Sensitivity
@@ -70,11 +74,36 @@ private const val TRACE = 100
 @Composable
 fun DemoScreen(s: LinkState, settings: Settings, c: Ctx, wide: Boolean, forced: Gesture? = null) {
     val link = c.link
+    val controls = androidx.compose.ui.platform.LocalContext.current.hearOn.controls
     DisposableEffect(s.connected) {
+        // Gestures here are only a demo: pause head-gesture actions while it's open.
+        controls.demoOpen = true
         if (s.connected) link.trackHead("demo", true)
-        onDispose { link.trackHead("demo", false) }
+        onDispose { link.trackHead("demo", false); controls.demoOpen = false }
     }
-    val detector = remember(settings.sensitivity) { HeadGestureDetector(settings.sensitivity) }
+    val scale = s.cache.headScale
+    val detector = remember(settings.sensitivity, scale) {
+        HeadGestureDetector(settings.sensitivity).also { d -> scale?.let { d.baseThreshold = (it * 0.45f).coerceAtLeast(40f) } }
+    }
+    var calib by remember { mutableStateOf<String?>(null) }   // null, "nod", "shake", "done", "failed"
+    var calibRun by remember { mutableIntStateOf(0) }
+    LaunchedEffect(calibRun) {
+        if (calibRun == 0) return@LaunchedEffect
+        val nod = ArrayList<ByteArray>(); val shake = ArrayList<ByteArray>()
+        suspend fun record(into: MutableList<ByteArray>) = kotlinx.coroutines.withTimeoutOrNull(5_000) {
+            link.events.collect { e ->
+                if (e is AapEvent.Sensor && (e.service == Aap.SENSOR_DEVMOTION || e.service == Aap.SENSOR_ACTIVITY)) into += e.payload
+            }
+        }
+        calib = "nod"; delay(600); record(nod)
+        calib = "shake"; delay(600); record(shake)
+        val r = Calibration.solve(nod, shake)
+        if (r != null && r.quality > 1.5f) {
+            link.updateCache { it.copy(headVertical = r.verticalOffset, headHorizontal = r.horizontalOffset, headScale = r.scale) }
+            calib = "done"
+        } else calib = "failed"
+        delay(2500); calib = null
+    }
     var result by remember { mutableStateOf(forced) }
     var yes by remember { mutableIntStateOf(if (forced != null) 3 else 0) }
     var no by remember { mutableIntStateOf(if (forced != null) 1 else 0) }
@@ -99,6 +128,10 @@ fun DemoScreen(s: LinkState, settings: Settings, c: Ctx, wide: Boolean, forced: 
     LaunchedEffect(s.connected) { waited = false; delay(3500); waited = true }
 
     val caption = when {
+        calib == "nod" -> "Calibrating: nod a few times"
+        calib == "shake" -> "Now shake your head a few times"
+        calib == "done" -> "Calibrated. Try a nod or a shake"
+        calib == "failed" -> "That didn't work. Wear both AirPods and try again with bigger moves"
         forced == Gesture.NOD -> "Nod detected"
         forced == Gesture.SHAKE -> "Shake detected"
         !s.connected -> "Connect your AirPods to try this"
@@ -129,7 +162,11 @@ fun DemoScreen(s: LinkState, settings: Settings, c: Ctx, wide: Boolean, forced: 
                 val all = Sensitivity.entries
                 Choice(listOf("Gentle", "Normal", "Firm"), all.indexOf(settings.sensitivity)) { i -> c.prefs.update { it.copy(sensitivity = all[i]) } }
             }
-            Hint("Head motion stops when you leave this screen.")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                PillButton(if (s.cache.headScale != null) "Calibrate again" else "Calibrate") { if (s.connected && calib == null) calibRun++ }
+                if (s.cache.headScale != null) Text("Tuned to these AirPods", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Hint("Head motion stops when you leave this screen. Nothing you do here triggers actions.")
         }
     }
     if (wide) Row(Modifier.fillMaxSize()) {

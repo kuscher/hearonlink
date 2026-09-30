@@ -57,7 +57,7 @@ class LinkService : LifecycleService() {
     private fun onState(s: LinkState) {
         val key = Notifications.key(s)
         if (key != shown) { shown = key; Notifications.post(this, Notifications.ID_CONNECTED, Notifications.connected(this, s)) }
-        val t = "${s.status}|${s.pod.listeningMode}|${s.pod.left.battery}|${s.pod.right.battery}"
+        val t = "${s.status}|${s.pod.listeningMode}|${s.batteries.lowestBud()}|${s.batteries.case?.percent}"
         if (t != tileKey) {
             tileKey = t
             TileService.requestListeningState(this, ComponentName(this, ModeTile::class.java))

@@ -228,7 +228,7 @@ private fun Color.luminance() = 0.2126f * red + 0.7152f * green + 0.0722f * blue
 // ---- battery -----------------------------------------------------------------------------------
 
 @Immutable
-data class Cell(val label: String, val level: Level?, val note: String)
+data class Cell(val label: String, val level: Level?, val note: String, val faded: Boolean = false)
 
 @Composable
 fun BatteryTrio(cells: List<Cell>, big: Boolean = true, faded: Boolean = false) {
@@ -236,6 +236,7 @@ fun BatteryTrio(cells: List<Cell>, big: Boolean = true, faded: Boolean = false) 
         for (c in cells) Column(Modifier.weight(1f).semantics(mergeDescendants = true) {
             stateDescription = c.level?.let { "${it.percent} percent${if (it.charging) ", charging" else ""}" } ?: "unknown"
         }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            val faded = faded || c.faded
             Text(c.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(

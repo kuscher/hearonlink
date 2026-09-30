@@ -37,13 +37,13 @@ data class Batteries(
 
     /**
      * Levels from a proximity advert. Precise (decrypted, 1 %) values win over the coarse 10 % ones;
-     * neither replaces a live control-channel value that is less than a minute old.
+     * neither replaces a live control-channel value (the AirPods push those whenever they change).
      */
     fun fromAdvert(left: Int?, right: Int?, case: Int?, lc: Boolean, rc: Boolean, cc: Boolean, precise: Boolean, now: Long): Batteries {
         val src = if (precise) Source.ADVERT_PRECISE else Source.ADVERT
         fun merge(old: PartLevel?, v: Int?, charging: Boolean): PartLevel? {
             if (v == null) return old
-            if (old != null && old.live && old.source == Source.LIVE && now - old.at < 60_000) return old
+            if (old != null && old.live) return old
             if (old != null && !precise && old.source != Source.ADVERT && now - old.at < 10 * 60_000 && kotlin.math.abs(old.percent - v) <= 10) return old
             return PartLevel(v, charging, now, src, live = false)
         }

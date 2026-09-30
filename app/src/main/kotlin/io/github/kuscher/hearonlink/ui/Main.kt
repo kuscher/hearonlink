@@ -224,11 +224,7 @@ fun PanelContent(s: LinkState, link: io.github.kuscher.hearonlink.link.Link, clo
                 StatusDot(statusText(s), s.connected)
             }
             val live = s.connected
-            BatteryTrio(listOf(
-                Cell("Left", if (live) p.left.battery else s.last.leftLevel, ""),
-                Cell("Case", if (live) p.case else s.last.caseLevel, if (p.case?.charging == true) "Charging" else ""),
-                Cell("Right", if (live) p.right.battery else s.last.rightLevel, ""),
-            ), big = false, faded = !live)
+            BatteryTrio(batteryCells(s), big = false)
             if (live && p.has(Feature.LISTENING_MODES)) ModeGroup(p.listeningMode, availableModes(p), height = 68.dp, onSelect = link::setMode)
             if (live && p.has(Feature.CONVERSATION_AWARENESS)) Group(rows = listOf { m ->
                 SwitchRow(m, "Conversation awareness", null, p.conversationAwareness) { link.setFlag(Control.CONVERSATION_AWARENESS, it) }

@@ -1,7 +1,10 @@
 package io.github.kuscher.hearonlink.ui
 
+import android.Manifest
 import android.content.Intent
 import android.provider.Settings as AndroidSettings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +23,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +32,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -39,26 +46,33 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.kuscher.hearonlink.R
 import io.github.kuscher.hearonlink.aap.Control
 import io.github.kuscher.hearonlink.aap.EarState
 import io.github.kuscher.hearonlink.aap.Feature
+import io.github.kuscher.hearonlink.aap.Level
 import io.github.kuscher.hearonlink.aap.ListeningMode
+import io.github.kuscher.hearonlink.aap.PartLevel
 import io.github.kuscher.hearonlink.aap.PodState
+import io.github.kuscher.hearonlink.aap.Press
 import io.github.kuscher.hearonlink.data.Prefs
 import io.github.kuscher.hearonlink.data.Settings
+import io.github.kuscher.hearonlink.gestures.Sensitivity
+import io.github.kuscher.hearonlink.hearOn
+import io.github.kuscher.hearonlink.link.Action
 import io.github.kuscher.hearonlink.link.Link
 import io.github.kuscher.hearonlink.link.LinkState
 import io.github.kuscher.hearonlink.link.LinkStatus
+import io.github.kuscher.hearonlink.link.SystemActions
 import io.github.kuscher.hearonlink.system.icon
 import io.github.kuscher.hearonlink.system.label
 import io.github.kuscher.hearonlink.ui.theme.LocalHearOnColors
-import java.text.DateFormat
-import java.util.Date
 
 enum class Page(val title: String) {
-    HOME("HearOn Link"), NOISE("Noise control"), PRESS("Press and hold"), EAR("Ear detection"),
-    GESTURES("Head gestures"), ABOUT("About these AirPods"), SETTINGS("Settings"), DEMO("Try head gestures"),
+    HOME("HearOn Link"), NOISE("Noise control"), PRESSES("Stem presses"), PRESS("Press speed and hold"),
+    EAR("Ear detection"), GESTURES("Head gestures"), SOUND("Sound"), CALLS("Calls and microphone"),
+    HEALTH("Health"), ABOUT("About these AirPods"), SETTINGS("Settings"), DEMO("Try head gestures"),
 }
 
 /** Everything the screens need to act. */
@@ -84,6 +98,39 @@ fun availableModes(p: PodState): List<ListeningMode> = buildList {
     add(ListeningMode.NOISE_CANCELLATION)
 }
 
+/** "just now", "12 min ago", "3 h ago", "yesterday". */
+fun age(at: Long, now: Long = System.currentTimeMillis()): String {
+    val m = (now - at) / 60_000
+    return when {
+        m < 1 -> "just now"
+        m < 60 -> "$m min ago"
+        m < 24 * 60 -> "${m / 60} h ago"
+        else -> "yesterday"
+    }
+}
+
+/** Battery cells from the cache: live parts show ear state or charging, the rest their age. */
+fun batteryCells(s: LinkState): List<Cell> {
+    val p = s.pod
+    fun note(part: PartLevel?, ear: EarState?): String = when {
+        part == null -> ""
+        part.live && part.charging -> "Charging"
+        part.live -> ear?.let(::earNote) ?: ""
+        else -> age(part.at)
+    }
+    fun lv(part: PartLevel?) = part?.let { Level(it.percent, it.charging) }
+    val b = s.batteries
+    return if (b.single != null && b.left == null && b.right == null) listOf(Cell("Battery", lv(b.single), note(b.single, null)))
+    else listOf(
+        Cell("Left", lv(b.left), note(b.left, p.left.ear.takeIf { s.connected }), faded = b.left?.live != true),
+        Cell("Case", lv(b.case), note(b.case, null), faded = b.case?.live != true),
+        Cell("Right", lv(b.right), note(b.right, p.right.ear.takeIf { s.connected }), faded = b.right?.live != true),
+    )
+}
+
+/** Switch value for controls the AirPods may not report: while connected, unknown shows as off. */
+private fun sw(v: Boolean?, live: Boolean) = if (live) (v ?: false) else v
+
 // ---- the AirPods pane (left on a Googlebook, top on a phone) ------------------------------------
 
 @Composable
@@ -94,15 +141,7 @@ fun DevicePane(s: LinkState, c: Ctx, modifier: Modifier = Modifier, artWidth: Dp
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             PodsArt(Modifier.size(artWidth, artWidth * 0.68f), inCase = !live, dim = !live)
         }
-        val cells = if (live) listOf(
-            Cell("Left", p.left.battery, earNote(p.left.ear)),
-            Cell("Case", p.case, if (p.case?.charging == true) "Charging" else ""),
-            Cell("Right", p.right.battery, earNote(p.right.ear)),
-        ) else {
-            val at = s.last.at.takeIf { it > 0 }?.let { DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(it)) } ?: ""
-            listOf(Cell("Left", s.last.leftLevel, at), Cell("Case", s.last.caseLevel, at), Cell("Right", s.last.rightLevel, at))
-        }
-        BatteryTrio(cells, big = !c.phone || true, faded = !live)
+        BatteryTrio(batteryCells(s))
         if (!live) AwayCard(s, c)
         if (live && p.has(Feature.LISTENING_MODES)) Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Listening mode", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -139,8 +178,7 @@ private fun AwayCard(s: LinkState, c: Ctx) {
         LinkStatus.BLUETOOTH_OFF -> "Bluetooth is off" to "Turn Bluetooth on to use your AirPods."
         LinkStatus.FAILED -> "Couldn't reach the AirPods' controls" to ((s.message?.let { "$it. " } ?: "") + "If another AirPods app is running (CAPod, LibrePods), close it and try again.")
         LinkStatus.CONNECTING -> "Connecting…" to "Talking to your AirPods."
-        else -> "Not connected" to "Open the case near this device, or connect in Bluetooth settings." +
-            (if (s.last.at > 0) " Battery levels are from the time shown." else "")
+        else -> "Not connected" to "Open the case near this device, or connect in Bluetooth settings. Battery shows when each part was last seen."
     }
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(LocalHearOnColors.current.card).padding(20.dp),
@@ -157,52 +195,90 @@ private fun AwayCard(s: LinkState, c: Ctx) {
     }
 }
 
+// ---- summaries ---------------------------------------------------------------------------------
+
+private val PRESS_NAMES = mapOf(Press.SINGLE to "Press once", Press.DOUBLE to "Press twice", Press.TRIPLE to "Press three times", Press.LONG to "Press and hold")
+
+private fun pressSummary(st: Settings): String {
+    val custom = Press.entries.mapNotNull { p ->
+        val l = Action.of(st.pressAction("L", p)); val r = Action.of(st.pressAction("R", p))
+        if (l == Action.DEFAULT && r == Action.DEFAULT) null
+        else "${PRESS_NAMES[p]}: " + (if (l == r || !st.splitBuds) l.label else "${l.label} / ${r.label}")
+    }
+    return if (custom.isEmpty()) "AirPods defaults" else custom.joinToString(" · ")
+}
+
+private fun gestureSummary(st: Settings, phone: Boolean): String = when {
+    st.gesturesAnytime -> "Nod: ${Action.of(st.nodAction).label} · Shake: ${Action.of(st.shakeAction).label}"
+    phone && st.gestureCalls -> "Nod to answer calls, shake to decline"
+    else -> "Off · try them in the demo"
+}
+
+private fun speedSummary(p: PodState): String {
+    val speed = listOf("Default", "Slower", "Slowest")[(p.control(Control.PRESS_SPEED) ?: 0).coerceIn(0, 2)]
+    return "Press speed: $speed"
+}
+
 // ---- settings sections ---------------------------------------------------------------------------
 
 /** The Googlebook's right pane on the home page: settings with the most-used controls inline. */
 @Composable
 fun HomeSettings(s: LinkState, settings: Settings, c: Ctx) {
-    val p = s.pod
+    val p = s.view
     val live = s.connected
     Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
-        if (!live || p.has(Feature.LISTENING_MODES)) Group("Noise control", listOf(
+        if (p.has(Feature.LISTENING_MODES) || !live) Group("Noise control", listOf(
             { m -> SettingRow(m, "Press and hold switches between", enabled = live, below = { CycleChips(p, c, live) }) },
             { m -> SwitchRow(m, "Noise Cancellation with one AirPod", "Keep noise control on when you wear only one", if (live) p.oneBudAnc else null) { c.link.setFlag(Control.ONE_BUD_ANC, it) } },
         ))
-        if (!live || p.has(Feature.HEAD_GESTURES)) Group("Head gestures", listOf(
-            { m -> NavRow(m, "Try head gestures", if (c.phone) "Nod for yes, shake for no, live" else "Nod for yes, shake for no, live. Answering calls this way works on phones.", R.drawable.ic_head, enabled = live) { c.go(Page.DEMO) } },
+        Group("Controls", buildList {
+            add { m -> NavRow(m, "Stem presses", pressSummary(settings), R.drawable.ic_hold) { c.go(Page.PRESSES) } }
+            add { m -> NavRow(m, "Press speed and hold duration", speedSummary(p), R.drawable.ic_tune, enabled = live) { c.go(Page.PRESS) } }
+            if (p.has(Feature.VOLUME_SWIPE)) add { m -> SwitchRow(m, "Swipe the stem to change volume", null, if (live) p.volumeSwipe else null, R.drawable.ic_volume) { c.link.setFlag(Control.VOLUME_SWIPE, it) } }
+        })
+        if (p.has(Feature.HEAD_GESTURES) || !live) Group("Head gestures", listOf(
+            { m -> NavRow(m, "Head gestures", gestureSummary(settings, c.phone), R.drawable.ic_head) { c.go(Page.GESTURES) } },
         ))
-        Group("Ear detection", listOf(
-            { m -> SwitchRow(m, "Pause when you take an AirPod out", "Plays again when you put it back in", settings.earPause, R.drawable.ic_ear) { v -> c.prefs.update { it.copy(earPause = v, earResume = v) } } },
-        ))
-        Group("Press and hold", listOf(
-            { m -> NavRow(m, "Press speed and hold duration", pressSummary(p), R.drawable.ic_hold, enabled = live) { c.go(Page.PRESS) } },
-            { m -> SwitchRow(m, "Swipe the stem to change volume", null, if (live && p.has(Feature.VOLUME_SWIPE)) p.volumeSwipe else null, R.drawable.ic_volume) { c.link.setFlag(Control.VOLUME_SWIPE, it) } },
-        ))
+        Group("Ear detection", buildList {
+            add { m -> SwitchRow(m, "Pause when you take an AirPod out", "Plays again when you put it back in", settings.earPause, R.drawable.ic_ear) { v -> c.prefs.update { it.copy(earPause = v, earResume = v) } } }
+            if (p.has(Feature.SLEEP_DETECTION)) add { m -> SwitchRow(m, "Pause when you fall asleep", null, sw(p.sleepDetection, live)) { c.link.setFlag(Control.SLEEP_DETECTION, it) } }
+            add { m -> NavRow(m, "More ear detection", null) { c.go(Page.EAR) } }
+        })
+        Group("Sound and calls", buildList {
+            add { m -> NavRow(m, "Sound", "EQ, tone volume" + if (p.has(Feature.CASE_SOUNDS)) ", case sounds" else "", R.drawable.ic_volume) { c.go(Page.SOUND) } }
+            if (p.has(Feature.CALL_CONTROLS)) add { m -> NavRow(m, "Calls and microphone", callSummary(p), R.drawable.ic_call) { c.go(Page.CALLS) } }
+            if (p.has(Feature.HEART_RATE) || p.has(Feature.HEARING_PROTECTION)) add { m -> NavRow(m, "Health", "Heart rate, hearing protection", R.drawable.ic_head) { c.go(Page.HEALTH) } }
+        })
+        if (p.has(Feature.OPTIMIZED_CHARGING)) Group("Battery", listOf { m ->
+            SwitchRow(m, "Optimized charging", "Waits at 80 % when the AirPods expect a long charge", sw(p.optimizedCharging, live)) { c.link.setFlag(Control.OPTIMIZED_CHARGING, it) }
+        })
         Group("These AirPods", listOf(
             { m -> NavRow(m, "About these AirPods", "Name, model, firmware", R.drawable.ic_info) { c.go(Page.ABOUT) } },
         ))
     }
 }
 
+private fun callSummary(p: PodState) = when (p.callControlsSwapped) {
+    true -> "Press once to end a call"; else -> "Press once to mute, twice to end"
+}
+
 /** A phone's home list: one row per page. */
 @Composable
 fun PhoneNav(s: LinkState, settings: Settings, c: Ctx) {
-    val p = s.pod
+    val p = s.view
     val live = s.connected
     val rows = buildList<@Composable (Modifier) -> Unit> {
         if (!live || p.has(Feature.LISTENING_MODES)) add { m -> NavRow(m, "Noise control", "Press and hold, one-AirPod mode", R.drawable.ic_mode_nc, enabled = live) { c.go(Page.NOISE) } }
-        if (!live || p.has(Feature.HEAD_GESTURES)) add { m -> NavRow(m, "Head gestures", if (settings.gestureCalls) "On · Nod to answer calls, shake to decline" else "Nod for yes, shake for no", R.drawable.ic_head) { c.go(Page.GESTURES) } }
+        add { m -> NavRow(m, "Stem presses", pressSummary(settings), R.drawable.ic_hold) { c.go(Page.PRESSES) } }
+        if (!live || p.has(Feature.HEAD_GESTURES)) add { m -> NavRow(m, "Head gestures", gestureSummary(settings, true), R.drawable.ic_head) { c.go(Page.GESTURES) } }
         add { m -> NavRow(m, "Ear detection", if (settings.earPause) "Pause when you take one out" else "Off", R.drawable.ic_ear) { c.go(Page.EAR) } }
-        add { m -> NavRow(m, "Press and hold", pressSummary(p), R.drawable.ic_hold, enabled = live) { c.go(Page.PRESS) } }
+        add { m -> NavRow(m, "Sound", "EQ, tone volume", R.drawable.ic_volume) { c.go(Page.SOUND) } }
+        if (p.has(Feature.CALL_CONTROLS)) add { m -> NavRow(m, "Calls and microphone", callSummary(p), R.drawable.ic_call) { c.go(Page.CALLS) } }
+        if (p.has(Feature.HEART_RATE) || p.has(Feature.HEARING_PROTECTION)) add { m -> NavRow(m, "Health", "Heart rate, hearing protection", R.drawable.ic_head) { c.go(Page.HEALTH) } }
+        add { m -> NavRow(m, "Press speed and hold", speedSummary(p), R.drawable.ic_tune, enabled = live) { c.go(Page.PRESS) } }
         add { m -> NavRow(m, "About these AirPods", "Name, model, firmware", R.drawable.ic_info) { c.go(Page.ABOUT) } }
     }
     Group(rows = rows)
-}
-
-private fun pressSummary(p: PodState): String {
-    val speed = listOf("Default", "Slower", "Slowest")[(p.control(Control.PRESS_SPEED) ?: 0).coerceIn(0, 2)]
-    return "Press speed: $speed"
 }
 
 @Composable
@@ -222,9 +298,54 @@ private fun CycleChips(p: PodState, c: Ctx, enabled: Boolean) {
     }
 }
 
+/** A row whose value is an action, picked from a menu that opens on click. */
+@Composable
+fun ActionRow(modifier: Modifier, title: String, current: Action, options: List<Action>, enabled: Boolean = true, onPick: (Action) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box(modifier) {
+        SettingRow(Modifier, title, current.label, onClick = { open = true }, enabled = enabled) {
+            Glyph(R.drawable.ic_down, size = 20.dp, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        DropdownMenu(open, { open = false }) {
+            var lastSystem = false
+            for (a in options) {
+                if (a.system && !lastSystem) Text("System (needs system actions)", Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                lastSystem = a.system
+                DropdownMenuItem(
+                    text = { Text(a.label) },
+                    trailingIcon = if (a == current) ({ Glyph(R.drawable.ic_check, size = 18.dp) }) else null,
+                    onClick = { open = false; onPick(a) },
+                )
+            }
+        }
+    }
+}
+
+/** Shown when a chosen action needs the system-actions service and it's off. */
+@Composable
+private fun SystemActionsCard(needed: Boolean) {
+    val context = LocalContext.current
+    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
+    val enabled = remember(lifecycle) { SystemActions.enabled(context) }
+    if (!needed || enabled) return
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.primaryContainer).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text("Turn on system actions", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+        Text(
+            "Show desktop, Overview and the other system actions need HearOn Link's system-actions service. It only performs " +
+                "the actions you pick; it doesn't read the screen or your input. If the switch is greyed out, open App info › ⋮ › Allow restricted settings first.",
+            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+        Row { PillButton("Open accessibility settings", R.drawable.ic_open, filled = true) { SystemActions.openSettings(context) } }
+    }
+}
+
 @Composable
 fun PageContent(page: Page, s: LinkState, settings: Settings, c: Ctx) {
-    val p = s.pod
+    val p = s.view
     val live = s.connected
     when (page) {
         Page.NOISE -> Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
@@ -238,11 +359,12 @@ fun PageContent(page: Page, s: LinkState, settings: Settings, c: Ctx) {
                     }
                 }
             })
-            Group("More", buildList {
+            Group("More", buildList<@Composable (Modifier) -> Unit> {
                 add { m -> SwitchRow(m, "Noise Cancellation with one AirPod", null, if (live) p.oneBudAnc else null) { c.link.setFlag(Control.ONE_BUD_ANC, it) } }
                 if (p.has(Feature.ADAPTIVE) && p.adaptiveLevel != null) add { m -> SettingRow(m, "Adaptive audio", below = { AdaptiveSlider(p, c) }) }
             })
         }
+        Page.PRESSES -> PressesPage(settings, c)
         Page.PRESS -> Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
             Group("Press speed", listOf { m ->
                 SettingRow(m, "How fast to press twice or three times", below = {
@@ -262,23 +384,45 @@ fun PageContent(page: Page, s: LinkState, settings: Settings, c: Ctx) {
                     })
                 },
             ))
-            if (p.toneVolume != null) Group("Sounds", listOf { m ->
-                var v by remember(p.toneVolume) { mutableFloatStateOf((p.toneVolume ?: 75).toFloat()) }
-                SettingRow(m, "Tone volume", "Chimes like connect and low battery", below = {
-                    Slider(v, { v = it }, valueRange = 15f..100f, enabled = live, onValueChangeFinished = { c.link.setControl(Control.TONE_VOLUME, v.toInt()) })
+            if (p.has(Feature.CROWN)) Group("Digital Crown", listOf { m ->
+                SettingRow(m, "Turn to raise the volume", below = {
+                    Choice(listOf("Back to front", "Front to back"), if (p.crownReversed == true) 1 else 0, enabled = live) { i -> c.link.setControl(Control.CROWN_DIRECTION, if (i == 1) 1 else 2) }
                 })
             })
         }
         Page.EAR -> Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
-            Group(null, listOf(
+            Group("On this device", listOf(
                 { m -> SwitchRow(m, "Pause when you take an AirPod out", "HearOn Link pauses what's playing", settings.earPause) { v -> c.prefs.update { it.copy(earPause = v) } } },
                 { m -> SwitchRow(m, "Play again when you put it back", "Only if HearOn Link paused it", settings.earResume, enabled = settings.earPause) { v -> c.prefs.update { it.copy(earResume = v) } } },
             ))
+            Group("On the AirPods", buildList<@Composable (Modifier) -> Unit> {
+                add { m -> SwitchRow(m, "Automatic ear detection", "Sound plays only while the AirPods are in your ears", sw(p.earDetection, live)) { c.link.setFlag(Control.EAR_DETECTION, it) } }
+                if (p.has(Feature.SLEEP_DETECTION)) add { m -> SwitchRow(m, "Pause when you fall asleep", null, sw(p.sleepDetection, live)) { c.link.setFlag(Control.SLEEP_DETECTION, it) } }
+            })
             if (live) Group("Right now", listOf(
-                { m -> SettingRow(m, "Left AirPod", earNote(p.left.ear).ifEmpty { "Unknown" }) },
-                { m -> SettingRow(m, "Right AirPod", earNote(p.right.ear).ifEmpty { "Unknown" }) },
+                { m -> SettingRow(m, "Left AirPod", earNote(s.pod.left.ear).ifEmpty { "Unknown" }) },
+                { m -> SettingRow(m, "Right AirPod", earNote(s.pod.right.ear).ifEmpty { "Unknown" }) },
             ))
         }
+        Page.SOUND -> SoundPage(s, c)
+        Page.CALLS -> Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
+            Group("Call controls", listOf { m ->
+                SettingRow(m, "Press once during a call to", "Pressing twice does the other", enabled = live, below = {
+                    Choice(listOf("Mute", "End the call"), if (p.callControlsSwapped == true) 1 else 0, enabled = live) { i ->
+                        val first = p.controls[Control.CALL_CONTROLS]?.firstOrNull() ?: 0
+                        c.link.setControl(Control.CALL_CONTROLS, first, if (i == 1) 2 else 3)
+                    }
+                })
+            })
+            Group("Microphone", listOf { m ->
+                SettingRow(m, "Which AirPod listens", enabled = live, below = {
+                    val idx = when (p.micMode) { 2 -> 1; 1 -> 2; else -> 0 }
+                    Choice(listOf("Automatic", "Left", "Right"), idx, enabled = live) { i -> c.link.setControl(Control.MIC_MODE, when (i) { 1 -> 2; 2 -> 1; else -> 0 }) }
+                })
+            })
+            if (c.phone) Hint("To answer calls with a nod, see Head gestures.")
+        }
+        Page.HEALTH -> HealthPage(s, c)
         Page.GESTURES -> GesturesPage(s, settings, c)
         Page.ABOUT -> AboutPage(s, c)
         Page.SETTINGS -> AppSettingsPage(settings, c)
@@ -287,7 +431,31 @@ fun PageContent(page: Page, s: LinkState, settings: Settings, c: Ctx) {
 }
 
 @Composable
+private fun PressesPage(settings: Settings, c: Ctx) {
+    Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
+        Hint("Pick what each press does. Presses left on “AirPods default” stay with the AirPods, so they work the same with your other devices. Custom presses work while HearOn Link is connected.")
+        Group(null, listOf { m ->
+            SwitchRow(m, "Set left and right separately", null, settings.splitBuds) { v -> c.prefs.update { it.copy(splitBuds = v) } }
+        })
+        val buds = if (settings.splitBuds) listOf("L" to "Left AirPod", "R" to "Right AirPod") else listOf("B" to "Both AirPods")
+        for ((bud, title) in buds) Group(title, Press.entries.map { press ->
+            { m: Modifier ->
+                ActionRow(m, PRESS_NAMES[press]!!, Action.of(settings.presses["$bud.${press.name}"]), Action.forPresses) { a ->
+                    c.prefs.update { st -> st.copy(presses = st.presses + ("$bud.${press.name}" to a.name)) }
+                }
+            }
+        })
+        val needsSystem = Press.entries.any { p -> Action.of(settings.pressAction("L", p)).system || Action.of(settings.pressAction("R", p)).system }
+        SystemActionsCard(needsSystem)
+    }
+}
+
+@Composable
 private fun GesturesPage(s: LinkState, settings: Settings, c: Ctx) {
+    val context = LocalContext.current
+    val callPerms = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { res ->
+        if (res.values.all { it }) c.prefs.update { it.copy(gestureCalls = true) }
+    }
     Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(88.dp).clip(RoundedCornerShape(30.dp)).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
@@ -295,34 +463,94 @@ private fun GesturesPage(s: LinkState, settings: Settings, c: Ctx) {
             }
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Nod for yes, shake for no", style = MaterialTheme.typography.headlineSmall)
-                Text(
-                    "Your AirPods feel how your head moves." +
-                        (if (c.phone) " HearOn Link can answer and decline calls this way." else " On a phone, HearOn Link can answer and decline calls this way.") +
-                        " Head motion is read only while the demo is open or a call rings.",
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text("Your AirPods feel how your head moves. Head motion is read only while you use gestures, the demo is open or a call rings.",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        if (c.phone) Group(null, listOf(
-            { m -> SwitchRow(m, "Answer calls with your head", "Nod to accept, shake to decline", settings.gestureCalls) { v -> c.prefs.update { it.copy(gestureCalls = v) } } },
-        )) else Group(null, listOf(
-            { m -> SettingRow(m, "Nod", "Yes: accept a call on your phone", R.drawable.ic_check) },
-            { m -> SettingRow(m, "Shake", "No: decline it", R.drawable.ic_close) },
+        Group("Anytime", listOf(
+            { m -> SwitchRow(m, "Use head gestures anytime", "While an AirPod is in your ear. Uses a little more battery.", settings.gesturesAnytime) { v -> c.prefs.update { it.copy(gesturesAnytime = v) } } },
+            { m -> ActionRow(m, "Nod", Action.of(settings.nodAction), Action.forGestures, enabled = settings.gesturesAnytime) { a -> c.prefs.update { it.copy(nodAction = a.name) } } },
+            { m -> ActionRow(m, "Shake your head", Action.of(settings.shakeAction), Action.forGestures, enabled = settings.gesturesAnytime) { a -> c.prefs.update { it.copy(shakeAction = a.name) } } },
         ))
-        Group("Sensitivity", listOf { m ->
-            SettingRow(m, "How big a nod or shake has to be", below = {
-                val all = io.github.kuscher.hearonlink.gestures.Sensitivity.entries
-                Choice(listOf("Gentle", "Normal", "Firm"), all.indexOf(settings.sensitivity)) { i -> c.prefs.update { it.copy(sensitivity = all[i]) } }
-            })
+        SystemActionsCard(settings.gesturesAnytime && (Action.of(settings.nodAction).system || Action.of(settings.shakeAction).system))
+        if (c.phone) Group("Calls", listOf { m ->
+            SwitchRow(m, "Answer calls with your head", "Nod to accept, shake to decline", settings.gestureCalls) { v ->
+                if (v && !context.hearOn.controls.callsAllowed()) callPerms.launch(arrayOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.ANSWER_PHONE_CALLS))
+                else c.prefs.update { it.copy(gestureCalls = v) }
+            }
         })
-        Row { PillButton("Try it", R.drawable.ic_play, filled = true) { c.go(Page.DEMO) } }
+        Group("Sensitivity", listOf(
+            { m ->
+                SettingRow(m, "How big a nod or shake has to be", below = {
+                    val all = Sensitivity.entries
+                    Choice(listOf("Gentle", "Normal", "Firm"), all.indexOf(settings.sensitivity)) { i -> c.prefs.update { it.copy(sensitivity = all[i]) } }
+                })
+            },
+            { m -> SettingRow(m, "Calibration", if (s.cache.headScale != null) "Tuned to these AirPods" else "Not calibrated yet: calibrate in the demo for the best results") },
+        ))
+        Row { PillButton("Try it and calibrate", R.drawable.ic_play, filled = true) { c.go(Page.DEMO) } }
+    }
+}
+
+@Composable
+private fun SoundPage(s: LinkState, c: Ctx) {
+    val p = s.view
+    val live = s.connected
+    Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
+        val eq = s.pod.eq
+        if (eq != null) Group("Custom EQ", buildList<@Composable (Modifier) -> Unit> {
+            add { m -> SwitchRow(m, "Custom EQ", "Your own bass, mids and treble", eq.on) { on -> c.link.setEq(on, eq.low, eq.mid, eq.high) } }
+            for ((label, idx) in listOf("Bass" to 0, "Mids" to 1, "Treble" to 2)) add { m ->
+                val value = listOf(eq.low, eq.mid, eq.high)[idx]
+                var v by remember(value) { mutableFloatStateOf(value.toFloat()) }
+                SettingRow(m, label, enabled = eq.on, below = {
+                    Slider(v, { v = it }, valueRange = 0f..100f, enabled = eq.on, onValueChangeFinished = {
+                        val b = mutableListOf(eq.low, eq.mid, eq.high).also { it[idx] = v.toInt() }
+                        c.link.setEq(true, b[0], b[1], b[2])
+                    })
+                })
+            }
+        }) else if (live) Hint("Custom EQ appears here when your AirPods' firmware offers it.")
+        Group("Sounds", buildList<@Composable (Modifier) -> Unit> {
+            if (p.has(Feature.CASE_SOUNDS)) add { m -> SwitchRow(m, "Case sounds", "The case chimes when charging starts or it's being found", sw(p.caseSounds, live)) { c.link.setFlag(Control.CASE_SOUNDS, it) } }
+            if (p.toneVolume != null || live) add { m ->
+                var v by remember(p.toneVolume) { mutableFloatStateOf((p.toneVolume ?: 75).toFloat()) }
+                SettingRow(m, "Tone volume", "Chimes like connect and low battery", enabled = live, below = {
+                    Slider(v, { v = it }, valueRange = 15f..100f, enabled = live, onValueChangeFinished = { c.link.setControl(Control.TONE_VOLUME, v.toInt()) })
+                })
+            }
+        })
+    }
+}
+
+@Composable
+private fun HealthPage(s: LinkState, c: Ctx) {
+    val p = s.view
+    val live = s.connected
+    if (p.has(Feature.HEART_RATE)) DisposableEffect(live) {
+        if (live) c.link.trackSensor(Link.Sensor.HEART, "page", true)
+        onDispose { c.link.trackSensor(Link.Sensor.HEART, "page", false) }
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
+        if (p.has(Feature.HEART_RATE)) Column(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(LocalHearOnColors.current.card).padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text("Heart rate", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(s.heartRate?.let { "$it bpm" } ?: if (live) "Measuring…" else "Connect to measure",
+                style = MaterialTheme.typography.displaySmall)
+            Hint("Measured while this page is open, with the AirPods in.")
+        }
+        if (p.has(Feature.HEARING_PROTECTION)) Group("Hearing", listOf { m ->
+            SwitchRow(m, "Hearing protection", "Lowers loud surroundings in Transparency and Adaptive", sw(p.hearingProtection, live)) { c.link.setFlag(Control.HEARING_PROTECTION, it) }
+        })
     }
 }
 
 @Composable
 private fun AboutPage(s: LinkState, c: Ctx) {
     val context = LocalContext.current
-    val info = s.pod.info
+    val info = s.pod.info ?: s.cache.info
     var name by remember(info?.name) { mutableStateOf(info?.name ?: s.name) }
     var showSerials by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
@@ -334,13 +562,16 @@ private fun AboutPage(s: LinkState, c: Ctx) {
                 }
             })
         })
-        Group("Details", buildList {
-            add { m -> SettingRow(m, "Model", listOfNotNull(s.pod.family.takeIf { info != null }?.displayName, info?.modelNumber ?: s.last.model).joinToString(" · ").ifEmpty { "Connect to see" }) }
+        val family = s.view.family
+        Group("Details", buildList<@Composable (Modifier) -> Unit> {
+            add { m -> SettingRow(m, "Model", listOfNotNull(family.takeIf { it != io.github.kuscher.hearonlink.aap.Family.UNKNOWN }?.displayName, info?.modelNumber).joinToString(" · ").ifEmpty { "Connect to see" }) }
             info?.firmware?.let { fw -> add { m -> SettingRow(m, "Firmware", fw) } }
-            if (info?.serial != null) add { m ->
-                SettingRow(m, "Serial numbers", if (showSerials) listOfNotNull(info.serial, info.leftSerial?.let { "Left $it" }, info.rightSerial?.let { "Right $it" }).joinToString(" · ") else "Hidden",
+            val live = s.pod.info
+            if (live?.serial != null) add { m ->
+                SettingRow(m, "Serial numbers", if (showSerials) listOfNotNull(live.serial, live.leftSerial?.let { "Left $it" }, live.rightSerial?.let { "Right $it" }).joinToString(" · ") else "Hidden",
                     onClick = { showSerials = !showSerials }) { TextAction(if (showSerials) "Hide" else "Show") { showSerials = !showSerials } }
             }
+            if (s.cache.lastConnected > 0 && !s.connected) add { m -> SettingRow(m, "Last connected", age(s.cache.lastConnected)) }
         })
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PillButton("Bluetooth settings", R.drawable.ic_open) { context.startActivity(Intent(AndroidSettings.ACTION_BLUETOOTH_SETTINGS)) }

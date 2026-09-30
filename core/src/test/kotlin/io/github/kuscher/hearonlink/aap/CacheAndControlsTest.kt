@@ -26,7 +26,9 @@ class CacheAndControlsTest {
     @Test fun advertsFillTheCaseButDontFightLiveValues() {
         var cache = Batteries().fromAap(listOf(b(Component.LEFT, 87, ChargeState.DISCHARGING)), now = 100_000)
         cache = cache.fromAdvert(left = 80, right = 90, case = 64, lc = false, rc = false, cc = false, precise = true, now = 110_000)
-        assertEquals(87, cache.left!!.percent)            // live and fresh: kept
+        assertEquals(87, cache.left!!.percent)            // live: kept
+        // Still live ten minutes later (pushes only come on change): an advert doesn't replace it.
+        assertEquals(87, cache.fromAdvert(70, null, null, false, false, false, precise = true, now = 700_000).left!!.percent)
         assertEquals(90, cache.right!!.percent)           // unknown before: taken
         assertEquals(64, cache.case!!.percent); assertEquals(Source.ADVERT_PRECISE, cache.case!!.source)
         // A coarse advert close to a precise value doesn't replace it.

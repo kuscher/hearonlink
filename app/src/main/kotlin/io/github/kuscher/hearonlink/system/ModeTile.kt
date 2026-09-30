@@ -76,7 +76,7 @@ class ModeTile : TileService() {
     private fun show(s: LinkState) {
         val t = qsTile ?: return
         val mode = s.pod.listeningMode
-        val lowest = listOfNotNull(s.pod.left.battery?.percent, s.pod.right.battery?.percent, s.pod.single?.percent).minOrNull()
+        val lowest = s.batteries.lowestBud()
         when {
             s.connected && mode != null && mode != ListeningMode.OFF -> {
                 t.state = Tile.STATE_ACTIVE
@@ -112,12 +112,8 @@ class BatteryWidget : GlanceAppWidget() {
     @Composable
     private fun WidgetContent(s: LinkState) {
         val live = s.connected
-        val p = s.pod
-        val cells = listOf(
-            "Left" to (if (live) p.left.battery?.percent else s.last.left),
-            "Case" to (if (live) p.case?.percent else s.last.case),
-            "Right" to (if (live) p.right.battery?.percent else s.last.right),
-        )
+        val b = s.batteries
+        val cells = listOf("Left" to b.left?.percent, "Case" to b.case?.percent, "Right" to b.right?.percent)
         Column(
             GlanceModifier.fillMaxSize().background(GlanceTheme.colors.widgetBackground).cornerRadius(22.dp).padding(14.dp)
                 .clickable(actionStartActivity<MainActivity>()),
@@ -141,12 +137,15 @@ class BatteryWidget : GlanceAppWidget() {
 
     companion object {
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        private var last = 0L
+        private var pending: Job? = null
+
+        /** Debounced: a burst of changes becomes one update with the final state. */
         fun refresh(context: Context) {
-            val now = System.currentTimeMillis()
-            if (now - last < 3_000) return
-            last = now
-            scope.launch { runCatching { BatteryWidget().updateAll(context.applicationContext) } }
+            pending?.cancel()
+            pending = scope.launch {
+                kotlinx.coroutines.delay(1_500)
+                runCatching { BatteryWidget().updateAll(context.applicationContext) }
+            }
         }
     }
 }

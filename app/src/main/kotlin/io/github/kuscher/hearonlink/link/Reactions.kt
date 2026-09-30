@@ -86,18 +86,19 @@ class Reactions(private val context: Context, private val prefs: Prefs, private 
 }
 
 /**
- * Head motion from the AirPods' motion sensor stream. The two values used for gestures are the
- * int16 fields at payload offsets 30 (up/down) and 28 (sideways), as mapped in public protocol
- * notes; `./hol debug head` records raw frames to check them on new firmware.
+ * Head motion from the AirPods' motion sensor stream: two int16 values, one that follows nodding and
+ * one that follows shaking. Their offsets come from the head-gesture calibration (see
+ * gestures/Calibration.kt); until then we use 30 and 28, as mapped in public protocol notes.
  */
 object HeadMotion {
-    var verticalOffset = 30
-    var horizontalOffset = 28
+    const val DEFAULT_VERTICAL = 30
+    const val DEFAULT_HORIZONTAL = 28
 
-    fun decode(p: ByteArray): HeadSample? {
-        val need = maxOf(verticalOffset, horizontalOffset) + 2
-        if (p.size < need) return null
+    fun decode(p: ByteArray, vertical: Int? = null, horizontal: Int? = null): HeadSample? {
+        val v = vertical ?: DEFAULT_VERTICAL
+        val h = horizontal ?: DEFAULT_HORIZONTAL
+        if (p.size < maxOf(v, h) + 2) return null
         fun s16(i: Int) = ((p[i].toInt() and 0xff) or (p[i + 1].toInt() shl 8)).toShort().toFloat()
-        return HeadSample(SystemClock.elapsedRealtime(), s16(verticalOffset), s16(horizontalOffset))
+        return HeadSample(SystemClock.elapsedRealtime(), s16(v), s16(h))
     }
 }

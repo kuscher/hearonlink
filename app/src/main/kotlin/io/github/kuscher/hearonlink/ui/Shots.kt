@@ -34,7 +34,10 @@ import io.github.kuscher.hearonlink.aap.Control
 import io.github.kuscher.hearonlink.aap.DeviceInfo
 import io.github.kuscher.hearonlink.aap.EarState
 import io.github.kuscher.hearonlink.aap.PodState
-import io.github.kuscher.hearonlink.data.LastSeen
+import io.github.kuscher.hearonlink.aap.Batteries
+import io.github.kuscher.hearonlink.aap.PartLevel
+import io.github.kuscher.hearonlink.aap.Source
+import io.github.kuscher.hearonlink.data.DeviceCache
 import io.github.kuscher.hearonlink.gestures.Gesture
 import io.github.kuscher.hearonlink.hearOn
 import io.github.kuscher.hearonlink.link.LinkState
@@ -79,9 +82,20 @@ object Shots {
                 Control.VOLUME_SWIPE to listOf(1), Control.TONE_VOLUME to listOf(75), Control.PRESS_SPEED to listOf(0), Control.HOLD_DURATION to listOf(0),
             ),
         )
-        val last = LastSeen("AirPods Pro", "A3048", 80, 78, 55, at = System.currentTimeMillis() - 42 * 60_000)
-        return if (connected) LinkState(LinkStatus.CONNECTED, "00:00:00:00:00:00", p, last)
-        else LinkState(LinkStatus.AWAY, "00:00:00:00:00:00", PodState(), last)
+        val now = System.currentTimeMillis()
+        val cache = DeviceCache(name = "AirPods Pro", model = "A3048", firmware = "81.2675", build = "8454592", controls = p.controls,
+            headVertical = 30, headHorizontal = 28, headScale = 1200f, lastConnected = now - 42 * 60_000)
+        return if (connected) {
+            val b = Batteries().fromAap(listOf(
+                BatteryReading(Component.LEFT, 95, ChargeState.DISCHARGING), BatteryReading(Component.RIGHT, 93, ChargeState.DISCHARGING),
+                BatteryReading(Component.CASE, 72, ChargeState.CHARGING)), now)
+            LinkState(LinkStatus.CONNECTED, "00:00:00:00:00:00", p, cache, b)
+        } else {
+            val b = Batteries(
+                PartLevel(80, false, now - 42 * 60_000, Source.LIVE, false), PartLevel(78, false, now - 42 * 60_000, Source.LIVE, false),
+                PartLevel(55, false, now - 9 * 60_000, Source.ADVERT_PRECISE, false))
+            LinkState(LinkStatus.AWAY, "00:00:00:00:00:00", PodState(), cache, b)
+        }
     }
 
     /** kind: home | page:NOISE | demo | demo:yes | demo:no | away | onboarding | panel */

@@ -44,7 +44,7 @@ object Nearby {
     fun allowed(context: Context) =
         context.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
 
-    /** Scan while the setting is on and we know the keys; otherwise make sure nothing runs. */
+    /** Scan (low power, filtered) while the setting is on and we know the keys; it also keeps the case battery fresh. */
     @SuppressLint("MissingPermission")
     fun ensure(context: Context) {
         val app = context.hearOn
@@ -73,6 +73,9 @@ object Nearby {
         val addr = r.device.address.split(":").map { it.toInt(16).toByte() }.toByteArray()
         if (!Proximity.resolves(addr, irk)) return
         val precise = app.prefs.encKey?.let { Proximity.decrypt(advert, it) }
+        // Every advert refreshes the battery cache, connected or not (the case is often only seen here).
+        if (precise != null) app.link.onAdvert(precise.left, precise.right, precise.case, precise.leftCharging, precise.rightCharging, precise.caseCharging, true)
+        else app.link.onAdvert(advert.left, advert.right, advert.case, advert.leftCharging, advert.rightCharging, advert.caseCharging, false)
         val fresh = advert.lidOpen && !lastLidOpen && advert.fromCase
         lastLidOpen = advert.lidOpen
         if (!fresh || app.link.state.value.connected) return

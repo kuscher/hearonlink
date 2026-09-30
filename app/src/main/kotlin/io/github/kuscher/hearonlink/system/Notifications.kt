@@ -11,6 +11,7 @@ import android.content.pm.PackageManager
 import android.graphics.drawable.Icon
 import android.os.Build
 import io.github.kuscher.hearonlink.R
+import io.github.kuscher.hearonlink.aap.Batteries
 import io.github.kuscher.hearonlink.aap.ListeningMode
 import io.github.kuscher.hearonlink.aap.PodState
 import io.github.kuscher.hearonlink.hearOn
@@ -32,12 +33,12 @@ val ListeningMode.icon: Int get() = when (this) {
     ListeningMode.NOISE_CANCELLATION -> R.drawable.ic_mode_nc
 }
 
-/** "Left 100 % · Right 98 % · Case 72 %", skipping what we don't know. */
-fun batteryLine(p: PodState): String = listOfNotNull(
-    p.left.battery?.let { "Left ${it.percent} %" },
-    p.right.battery?.let { "Right ${it.percent} %" },
-    p.single?.let { "${it.percent} %" },
-    p.case?.let { "Case ${it.percent} %" },
+/** "Left 100 % · Right 98 % · Case 72 %" from the battery cache, skipping what we don't know. */
+fun batteryLine(b: Batteries): String = listOfNotNull(
+    b.left?.let { "Left ${it.percent} %" },
+    b.right?.let { "Right ${it.percent} %" },
+    b.single?.let { "${it.percent} %" },
+    b.case?.let { "Case ${it.percent} %" },
 ).joinToString(" · ")
 
 object Notifications {
@@ -63,7 +64,7 @@ object Notifications {
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
-    fun key(s: LinkState) = "${s.status}|${s.name}|${s.pod.listeningMode}|${batteryLine(s.pod)}"
+    fun key(s: LinkState) = "${s.status}|${s.name}|${s.pod.listeningMode}|${batteryLine(s.batteries)}"
 
     /** The foreground-service notification: current mode, battery as metrics, one-tap mode actions. */
     fun connected(context: Context, s: LinkState): Notification {
@@ -80,8 +81,8 @@ object Notifications {
         when {
             s.connected -> {
                 b.setContentTitle(mode?.label ?: s.name)
-                b.setContentText(batteryLine(p))
-                if (Build.VERSION.SDK_INT >= 37) metrics(b, p)
+                b.setContentText(batteryLine(s.batteries))
+                if (Build.VERSION.SDK_INT >= 37) metrics(b, s.batteries)
                 val modes = ListeningMode.DISPLAY_ORDER.filter { it != mode && (it != ListeningMode.OFF || p.flag(io.github.kuscher.hearonlink.aap.Control.ALLOW_OFF) == true) }
                 if (p.listeningMode != null) for (m in modes.takeLast(3)) b.addAction(
                     Notification.Action.Builder(Icon.createWithResource(context, m.icon), m.label, Actions.mode(context, m)).build(),
@@ -94,11 +95,11 @@ object Notifications {
     }
 
     @android.annotation.TargetApi(37)
-    private fun metrics(b: Notification.Builder, p: PodState) {
+    private fun metrics(b: Notification.Builder, bat: Batteries) {
         val style = Notification.MetricStyle()
         fun add(label: String, v: Int?) { if (v != null) style.addMetric(Notification.Metric(Notification.Metric.FixedInt(v, "%"), label)) }
-        add("Left", p.left.battery?.percent); add("Right", p.right.battery?.percent)
-        add("Battery", p.single?.percent); add("Case", p.case?.percent)
+        add("Left", bat.left?.percent); add("Right", bat.right?.percent)
+        add("Battery", bat.single?.percent); add("Case", bat.case?.percent)
         if (style.metrics.isNotEmpty()) b.setStyle(style)
     }
 

@@ -36,7 +36,7 @@ class DebugReceiver : BroadcastReceiver() {
                 say("status=${s.status} connected=${s.connected} name=${s.name} model=${p.info?.modelNumber} fw=${p.info?.firmware} build=${p.info?.build} " +
                     "mode=${p.listeningMode} L=${p.left} R=${p.right} case=${p.case} leftPrimary=${p.leftPrimary} " +
                     "controls=${p.controls.entries.sortedBy { it.key }.joinToString(",") { "%02x:%s".format(it.key, it.value) }} " +
-                    "keys=${app.prefs.irk != null}/${app.prefs.encKey != null} last=${s.last.at} msg=${s.message}")
+                    "keys=${app.prefs.irk != null}/${app.prefs.encKey != null} batteries=${s.batteries} head=${s.cache.headVertical}/${s.cache.headHorizontal}/${s.cache.headScale} msg=${s.message}")
             }
             "connect" -> { LinkService.start(context); say("ok") }
             "session" -> {
@@ -61,7 +61,7 @@ class DebugReceiver : BroadcastReceiver() {
             "control" -> { link.setControl(parts[1].toInt(16), *parts.drop(2).map { it.toInt() }.toIntArray()); say("ok") }
             "log" -> { Link.DEBUG = parts.getOrNull(1) != "off"; say("${Link.DEBUG}") }
             "onboarded" -> { app.prefs.update { it.copy(onboarded = parts.getOrNull(1) != "false") }; say("ok") }
-            "offsets" -> { HeadMotion.verticalOffset = parts[1].toInt(); HeadMotion.horizontalOffset = parts[2].toInt(); say("ok") }
+            "offsets" -> { link.updateCache { it.copy(headVertical = parts[1].toInt(), headHorizontal = parts[2].toInt()) }; say("ok") }
             "head" -> {
                 // Record N seconds of raw sensor frames to cache/head.txt ("ms hex" per line).
                 val secs = parts.getOrNull(1)?.toLongOrNull() ?: 8
