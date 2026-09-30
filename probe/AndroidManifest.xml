@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Throwaway feasibility probe: does Apple's AAP channel (L2CAP PSM 0x1001) open without root? -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="local.podlink.probe" android:versionCode="1" android:versionName="0.0.1">
+  <uses-sdk android:minSdkVersion="34" android:targetSdkVersion="37"/>
+  <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+  <application android:label="@string/app_name" android:allowBackup="false"/>
+  <instrumentation android:name=".Probe" android:targetPackage="local.podlink.probe"
+      android:label="PodLink probe"/>
+</manifest>
