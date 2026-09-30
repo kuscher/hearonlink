@@ -7,3 +7,6 @@ local.properties
 .gradle/
 executables/
 probe/libs/
+.kotlin/
+*.iml
+.idea/
