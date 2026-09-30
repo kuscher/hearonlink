@@ -72,7 +72,9 @@ class Controls(private val context: Context, private val prefs: Prefs, private v
         link.trackHead("anytime", anytime)
         link.trackHead("call", ringing && s.connected && !demoOpen)
         detector.sensitivity = st.sensitivity
-        detector.baseThreshold = s.cache.headScale?.let { (it * 0.45f).coerceAtLeast(40f) } ?: 600f
+        val cal = s.headCal
+        detector.verticalScale = cal?.verticalScale ?: HeadGestureDetector.DEFAULT_SCALE
+        detector.horizontalScale = cal?.horizontalScale ?: HeadGestureDetector.DEFAULT_SCALE
         calls(st)
     }
 

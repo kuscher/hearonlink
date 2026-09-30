@@ -58,7 +58,6 @@ import io.github.kuscher.hearonlink.R
 import io.github.kuscher.hearonlink.aap.Aap
 import io.github.kuscher.hearonlink.aap.AapEvent
 import io.github.kuscher.hearonlink.data.Settings
-import io.github.kuscher.hearonlink.gestures.Calibration
 import io.github.kuscher.hearonlink.hearOn
 import io.github.kuscher.hearonlink.gestures.Gesture
 import io.github.kuscher.hearonlink.gestures.HeadGestureDetector
@@ -81,28 +80,16 @@ fun DemoScreen(s: LinkState, settings: Settings, c: Ctx, wide: Boolean, forced: 
         if (s.connected) link.trackHead("demo", true)
         onDispose { link.trackHead("demo", false); controls.demoOpen = false }
     }
-    val scale = s.cache.headScale
-    val detector = remember(settings.sensitivity, scale) {
-        HeadGestureDetector(settings.sensitivity).also { d -> scale?.let { d.baseThreshold = (it * 0.45f).coerceAtLeast(40f) } }
-    }
-    var calib by remember { mutableStateOf<String?>(null) }   // null, "nod", "shake", "done", "failed"
-    var calibRun by remember { mutableIntStateOf(0) }
-    LaunchedEffect(calibRun) {
-        if (calibRun == 0) return@LaunchedEffect
-        val nod = ArrayList<ByteArray>(); val shake = ArrayList<ByteArray>()
-        suspend fun record(into: MutableList<ByteArray>) = kotlinx.coroutines.withTimeoutOrNull(5_000) {
-            link.events.collect { e ->
-                if (e is AapEvent.Sensor && (e.service == Aap.SENSOR_DEVMOTION || e.service == Aap.SENSOR_ACTIVITY)) into += e.payload
-            }
+    val cal = s.headCal
+    val detector = remember(settings.sensitivity, cal) {
+        HeadGestureDetector(settings.sensitivity).also { d ->
+            cal?.let { d.verticalScale = it.verticalScale; d.horizontalScale = it.horizontalScale }
         }
-        calib = "nod"; delay(600); record(nod)
-        calib = "shake"; delay(600); record(shake)
-        val r = Calibration.solve(nod, shake)
-        if (r != null && r.quality > 1.5f) {
-            link.updateCache { it.copy(headVertical = r.verticalOffset, headHorizontal = r.horizontalOffset, headScale = r.scale) }
-            calib = "done"
-        } else calib = "failed"
-        delay(2500); calib = null
+    }
+    var calibrating by remember { mutableStateOf(false) }
+    if (calibrating && forced == null) {
+        CalibrationWizard(s, c, wide) { calibrating = false }
+        return
     }
     var result by remember { mutableStateOf(forced) }
     var yes by remember { mutableIntStateOf(if (forced != null) 3 else 0) }
@@ -128,10 +115,6 @@ fun DemoScreen(s: LinkState, settings: Settings, c: Ctx, wide: Boolean, forced: 
     LaunchedEffect(s.connected) { waited = false; delay(3500); waited = true }
 
     val caption = when {
-        calib == "nod" -> "Calibrating: nod a few times"
-        calib == "shake" -> "Now shake your head a few times"
-        calib == "done" -> "Calibrated. Try a nod or a shake"
-        calib == "failed" -> "That didn't work. Wear both AirPods and try again with bigger moves"
         forced == Gesture.NOD -> "Nod detected"
         forced == Gesture.SHAKE -> "Shake detected"
         !s.connected -> "Connect your AirPods to try this"
@@ -151,7 +134,7 @@ fun DemoScreen(s: LinkState, settings: Settings, c: Ctx, wide: Boolean, forced: 
     }
     val side: @Composable () -> Unit = {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            MotionCard(vTrace, hTrace, head, tick, settings.sensitivity)
+            MotionCard(vTrace, hTrace, head, tick, detector.threshold * settings.sensitivity.threshold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Tally("Nods", yes, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer, Modifier.weight(1f))
                 Tally("Shakes", no, LocalHearOnColors.current.no, LocalHearOnColors.current.onNo, Modifier.weight(1f))
@@ -162,10 +145,7 @@ fun DemoScreen(s: LinkState, settings: Settings, c: Ctx, wide: Boolean, forced: 
                 val all = Sensitivity.entries
                 Choice(listOf("Gentle", "Normal", "Firm"), all.indexOf(settings.sensitivity)) { i -> c.prefs.update { it.copy(sensitivity = all[i]) } }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                PillButton(if (s.cache.headScale != null) "Calibrate again" else "Calibrate") { if (s.connected && calib == null) calibRun++ }
-                if (s.cache.headScale != null) Text("Tuned to these AirPods", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            CalibrationCard(s, c) { if (s.connected) calibrating = true }
             Hint("Head motion stops when you leave this screen. Nothing you do here triggers actions.")
         }
     }
@@ -214,7 +194,7 @@ private fun YesNoShape(result: Gesture?, size: Dp, v: Float, h: Float, tick: Int
         if (result == null) {
             // The head leans with the live motion: a small, calm hint that it's working.
             Glyph(R.drawable.ic_head, size = size * 0.3f, tint = ink, modifier = Modifier.graphicsLayer {
-                rotationZ = (h / 120f).coerceIn(-18f, 18f); translationY = (v / 40f).coerceIn(-24f, 24f)
+                rotationZ = (h * 14f).coerceIn(-18f, 18f); translationY = (v * 18f).coerceIn(-24f, 24f)
             })
         } else Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Glyph(if (result == Gesture.NOD) R.drawable.ic_check else R.drawable.ic_close, size = size * 0.24f, tint = ink)
@@ -224,26 +204,29 @@ private fun YesNoShape(result: Gesture?, size: Dp, v: Float, h: Float, tick: Int
 }
 
 @Composable
-private fun MotionCard(v: FloatArray, h: FloatArray, head: Int, tick: Int, sensitivity: Sensitivity) {
+private fun MotionCard(v: FloatArray, h: FloatArray, head: Int, tick: Int, threshold: Float) {
     val cs = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(LocalHearOnColors.current.card).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Live head motion", style = MaterialTheme.typography.titleSmall)
-        Trace("Up and down", v, head, tick, cs.primary, sensitivity)
-        Trace("Left and right", h, head, tick, cs.tertiary, sensitivity)
+        Trace("Up and down (nod)", v, head, tick, cs.primary, threshold)
+        Trace("Left and right (shake)", h, head, tick, cs.tertiary, threshold)
+        Hint("A swing counts when the line crosses the dotted marks.")
     }
 }
 
 @Composable
-private fun Trace(label: String, data: FloatArray, head: Int, tick: Int, color: Color, sensitivity: Sensitivity) {
+private fun Trace(label: String, data: FloatArray, head: Int, tick: Int, color: Color, threshold: Float) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         val guide = MaterialTheme.colorScheme.outlineVariant
         Canvas(Modifier.fillMaxWidth().height(52.dp)) {
             tick.hashCode() // redraw on every sample
             val mid = size.height / 2
-            drawLine(guide, Offset(0f, mid), Offset(size.width, mid), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 8f)))
-            val scale = mid / (1400f * sensitivity.threshold)
+            // Values are in swing units (about ±1 for a typical nod or shake); ±1.6 fills the height.
+            val scale = mid / 1.6f
+            for (y in listOf(mid - threshold * scale, mid + threshold * scale))
+                drawLine(guide, Offset(0f, y), Offset(size.width, y), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 8f)))
             val p = Path()
             val n = minOf(head, TRACE)
             for (k in 0 until n) {

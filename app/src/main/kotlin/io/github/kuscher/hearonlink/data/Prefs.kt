@@ -42,6 +42,10 @@ data class Settings(
 @Serializable
 data class CachedLevel(val percent: Int, val charging: Boolean, val at: Long, val source: String)
 
+/** Where nod and shake live in the motion frames, and how big a typical swing is on each. */
+@Serializable
+data class HeadCal(val vertical: Int, val horizontal: Int, val verticalScale: Float, val horizontalScale: Float, val quality: Float, val at: Long)
+
 /** What we remember about one pair of AirPods, so the app can show it while they're away. */
 @Serializable
 data class DeviceCache(
@@ -51,10 +55,13 @@ data class DeviceCache(
     val build: String? = null,
     val left: CachedLevel? = null, val right: CachedLevel? = null, val case: CachedLevel? = null, val single: CachedLevel? = null,
     val controls: Map<Int, List<Int>> = emptyMap(),
-    /** Head-sensor calibration: int16 offsets for up/down and sideways, and a typical swing size. */
-    val headVertical: Int? = null, val headHorizontal: Int? = null, val headScale: Float? = null,
+    /** Head-sensor calibration per primary bud ("L" or "R": each bud's sensor sits differently). */
+    val head: Map<String, HeadCal> = emptyMap(),
     val lastConnected: Long = 0,
 ) {
+    /** The calibration for whichever bud is primary now, else the other one's. */
+    fun headCal(leftPrimary: Boolean): HeadCal? = head[if (leftPrimary) "L" else "R"] ?: head.values.firstOrNull()
+
     val info: DeviceInfo? get() = if (name == null && model == null) null else DeviceInfo(name, model, null, null, firmware, null, null, null, null, build)
 
     val batteries: Batteries get() = Batteries(left?.part(), right?.part(), case?.part(), single?.part())

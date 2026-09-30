@@ -84,7 +84,7 @@ object Shots {
         )
         val now = System.currentTimeMillis()
         val cache = DeviceCache(name = "AirPods Pro", model = "A3048", firmware = "81.2675", build = "8454592", controls = p.controls,
-            headVertical = 30, headHorizontal = 28, headScale = 1200f, lastConnected = now - 42 * 60_000)
+            head = mapOf("L" to io.github.kuscher.hearonlink.data.HeadCal(28, 26, 900f, 700f, 6f, now)), lastConnected = now - 42 * 60_000)
         return if (connected) {
             val b = Batteries().fromAap(listOf(
                 BatteryReading(Component.LEFT, 95, ChargeState.DISCHARGING), BatteryReading(Component.RIGHT, 93, ChargeState.DISCHARGING),
@@ -117,6 +117,7 @@ object Shots {
                     Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxSize()) {
                         when {
                             kind == "panel" -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { PanelContent(state, app.link) {} }
+                            kind == "calibrate" -> CalibrationWizard(state, Ctx(app.link, app.prefs, {}, phone = w < 1000), wide = w >= 1000) {}
                             kind.startsWith("demo") -> AppScreen(state, settings, Page.DEMO,
                                 forced = when (kind) { "demo:yes" -> Gesture.NOD; "demo:no" -> Gesture.SHAKE; else -> null })
                             kind.startsWith("page:") -> AppScreen(state, settings, Page.valueOf(kind.removePrefix("page:")))

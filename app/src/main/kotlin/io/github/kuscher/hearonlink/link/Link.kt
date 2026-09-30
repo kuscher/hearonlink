@@ -47,6 +47,9 @@ data class LinkState(
     val connected get() = status == LinkStatus.CONNECTED && pod.handshakeDone
     val name: String get() = pod.info?.name ?: cache.name ?: "AirPods"
 
+    /** Head-sensor calibration for the current primary bud (null = uncalibrated defaults). */
+    val headCal get() = cache.headCal(pod.leftPrimary)
+
     /** For display: live state when connected, otherwise what we remember (read-only). */
     val view: PodState get() = if (connected) pod else PodState(info = cache.info, controls = cache.controls)
 }
@@ -182,8 +185,8 @@ class Link(private val context: Context, private val prefs: Prefs) {
             is AapEvent.Sensor -> {
                 AapParser.heartRate(e)?.let { bpm -> _state.update { it.copy(heartRate = bpm) } }
                 if (e.service == Aap.SENSOR_DEVMOTION || e.service == Aap.SENSOR_ACTIVITY) {
-                    val c = _state.value.cache
-                    HeadMotion.decode(e.payload, c.headVertical, c.headHorizontal)?.let { _head.tryEmit(it) }
+                    val cal = _state.value.headCal
+                    HeadMotion.decode(e.payload, cal?.vertical, cal?.horizontal)?.let { _head.tryEmit(it) }
                 }
             }
             else -> {}

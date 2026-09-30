@@ -486,7 +486,11 @@ private fun GesturesPage(s: LinkState, settings: Settings, c: Ctx) {
                     Choice(listOf("Gentle", "Normal", "Firm"), all.indexOf(settings.sensitivity)) { i -> c.prefs.update { it.copy(sensitivity = all[i]) } }
                 })
             },
-            { m -> SettingRow(m, "Calibration", if (s.cache.headScale != null) "Tuned to these AirPods" else "Not calibrated yet: calibrate in the demo for the best results") },
+            { m ->
+                SettingRow(m, "Calibration", if (s.headCal != null) "Tuned to your AirPods" else "Original values. Calibrate in the demo if nods or shakes are missed") {
+                    if (s.headCal != null || settings.sensitivity != Sensitivity.NORMAL) TextAction("Reset") { resetCalibration(c) }
+                }
+            },
         ))
         Row { PillButton("Try it and calibrate", R.drawable.ic_play, filled = true) { c.go(Page.DEMO) } }
     }

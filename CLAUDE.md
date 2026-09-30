@@ -45,7 +45,11 @@ never copy LibrePods (GPL-3.0) code, prose, fonts or images; byte layouts/opcode
 - Control writes are applied but NOT echoed: update state optimistically.
 - Listening-mode writes seem ignored while both buds are out of ear.
 - Head tracking: DEVMOTION6 (service 16) when firmware build starts with ≥8, else ACTIVITY (14); 25 Hz.
-  Offsets default to 30 up/down, 28 sideways (public notes); the demo's Calibrate stores measured ones.
+  Offsets default to 30 up/down, 28 sideways (public notes). The calibration wizard (ui/Calibrate.kt:
+  still → nod → shake → check) stores offsets + a swing scale PER AXIS, per primary bud ("L"/"R") in
+  DeviceCache.head; the detector divides each axis by its scale. Raw frames of the last calibration
+  are in the app cache (`./hol pull calibration-last.txt`). On the HP's Pro 2 at rest: 44/46/48 look
+  like gravity (≈1024 total), 26/28/30 like rotation rates, 0/2/10/12/50 are counters.
 - Custom stem presses: control 0x39 = mask of forwarded presses (only customised ones), events op 0x19.
   Unverified: whether the mask survives when the AirPods move to another device (keep defaults = none).
 - Custom EQ (op 0x63) shows only after the AirPods report it; the flags byte is echoed back unchanged.

@@ -12,22 +12,25 @@ data class HeadSample(val timeMs: Long, val vertical: Float, val horizontal: Flo
 /**
  * Nod / shake detector. Our own design:
  *
- * 1. Each axis is high-passed (the slow drift of how you hold your head is removed).
- * 2. A swing counts when an axis crosses +T after −T or the other way round (hysteresis), so
- *    jitter around zero never counts.
- * 3. A nod is at least [minSwings] swings on the vertical axis within [windowMs], while that axis
+ * 1. Each axis is divided by its calibrated swing size ([verticalScale], [horizontalScale]), so both
+ *    axes are compared in the same units whatever the sensor reports.
+ * 2. Each axis is high-passed (the slow drift of how you hold your head is removed).
+ * 3. A swing counts when an axis crosses +T after −T or the other way round (hysteresis), so jitter
+ *    around zero never counts. T = [threshold] × sensitivity, in units of a typical swing.
+ * 4. A nod is at least [minSwings] swings on the vertical axis within [windowMs], while that axis
  *    carries clearly more motion than the other ([dominance]); a shake is the same sideways.
- * 4. After a gesture the detector rests for [cooldownMs] and forgets the old swings.
+ * 5. After a gesture the detector rests for [cooldownMs] and forgets the old swings.
  *
- * T = [baseThreshold] × sensitivity, in the AirPods' raw sensor units. Calibration sets it to about
- * half of a typical nod ([Calibration.Result.scale]); 600 is the uncalibrated default.
+ * Uncalibrated defaults (scale 1333, threshold 0.45) mean a swing of about 600 raw units.
  */
 class HeadGestureDetector(
     var sensitivity: Sensitivity = Sensitivity.NORMAL,
-    var baseThreshold: Float = 600f,
+    var verticalScale: Float = DEFAULT_SCALE,
+    var horizontalScale: Float = DEFAULT_SCALE,
+    var threshold: Float = 0.45f,
     private val minSwings: Int = 2,
     private val windowMs: Long = 1600,
-    private val dominance: Float = 1.8f,
+    private val dominance: Float = 1.6f,
     private val cooldownMs: Long = 900,
     private val driftMs: Long = 900,
 ) {
@@ -43,7 +46,7 @@ class HeadGestureDetector(
             mean += alpha * (x - mean)
             val v = x - mean
             energy += (abs(v) - energy) * (dt / 400f).coerceIn(0f, 1f)
-            val th = baseThreshold * sensitivity.threshold
+            val th = threshold * sensitivity.threshold
             val s = if (v > th) 1 else if (v < -th) -1 else 0
             if (s != 0 && s != sign) {
                 if (sign != 0) swings.addLast(t)
@@ -61,17 +64,20 @@ class HeadGestureDetector(
     private var lastT = -1L
     private var restUntil = Long.MIN_VALUE
 
-    /** Filtered values of the last sample (for drawing the live traces). */
+    /** Filtered values of the last sample in swing units (≈ ±1 for a typical nod or shake). */
     var lastVertical = 0f; private set
     var lastHorizontal = 0f; private set
 
-    fun reset() { vertical.reset(); horizontal.reset(); vertical.mean = Float.NaN; horizontal.mean = Float.NaN; lastT = -1 }
+    fun reset() {
+        vertical.reset(); horizontal.reset(); vertical.mean = Float.NaN; horizontal.mean = Float.NaN
+        vertical.energy = 0f; horizontal.energy = 0f; lastT = -1
+    }
 
     fun feed(s: HeadSample): Gesture? {
         val dt = if (lastT < 0) 40f else (s.timeMs - lastT).coerceIn(1, 500).toFloat()
         lastT = s.timeMs
-        lastVertical = vertical.feed(s.timeMs, s.vertical, dt)
-        lastHorizontal = horizontal.feed(s.timeMs, s.horizontal, dt)
+        lastVertical = vertical.feed(s.timeMs, s.vertical / verticalScale, dt)
+        lastHorizontal = horizontal.feed(s.timeMs, s.horizontal / horizontalScale, dt)
         if (s.timeMs < restUntil) { vertical.reset(); horizontal.reset(); return null }
 
         val g = when {
@@ -85,4 +91,6 @@ class HeadGestureDetector(
         }
         return g
     }
+
+    companion object { const val DEFAULT_SCALE = 1333f }
 }
