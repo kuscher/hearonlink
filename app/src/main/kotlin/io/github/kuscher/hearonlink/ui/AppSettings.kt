@@ -12,6 +12,17 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,10 +77,13 @@ fun AppSettingsPage(settings: Settings, c: Ctx) {
             { m -> NavRow(m, "Add the tile", "Listening mode and battery, one tap away", R.drawable.ic_tiles) { addTile(context) } },
             { m -> SwitchRow(m, "Tap switches mode", "Instead of opening the small panel. Long-press always opens HearOn Link.", settings.tileTapCycles) { v -> c.prefs.update { it.copy(tileTapCycles = v) } } },
         ))
+        var licences by remember { mutableStateOf(false) }
         Group("About HearOn Link", listOf(
             { m -> SettingRow(m, "Version ${BuildConfig.VERSION_NAME}", "A personal passion project by Alexander Kuscher. Not affiliated with Apple. AirPods is a trademark of Apple Inc.") },
-            { m -> NavRow(m, "Source code and licences", "MIT. Protocol research credit: LibrePods.") { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/kuscher/hearonlink"))) } },
+            { m -> NavRow(m, "Open-source licences", "MIT. Credits: LibrePods' protocol research.") { licences = true } },
+            { m -> NavRow(m, "Source code", "github.com/kuscher/hearonlink") { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/kuscher/hearonlink"))) } },
         ))
+        if (licences) LicencesDialog { licences = false }
         Text("No internet access, no accounts, no tracking. Everything stays on this device.", Modifier, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -80,4 +94,39 @@ fun addTile(context: android.content.Context) {
         ComponentName(context, ModeTile::class.java), context.getString(R.string.tile_label),
         Icon.createWithResource(context, R.drawable.ic_mode_nc), context.mainExecutor,
     ) { }
+}
+
+/** Every notice and full licence text shipped in assets/licenses, in one scrollable page. */
+@Composable
+private fun LicencesDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val scheme = MaterialTheme.colorScheme
+    val parts = remember {
+        listOf(
+            null to "NOTICES.txt",
+            "Apache License 2.0" to "Apache-2.0.txt",
+            "SIL Open Font License 1.1 (HearOn Sans)" to "OFL-GoogleSans.txt",
+            "MIT License (HearOn Link)" to "MIT-HearOnLink.txt",
+        ).map { (title, file) ->
+            title to (runCatching { context.assets.open("licenses/$file").bufferedReader().use { it.readText() } }.getOrDefault(""))
+        }
+    }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        androidx.compose.material3.Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp), color = scheme.surface,
+            modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth(0.94f).fillMaxHeight(0.9f)) {
+            Column {
+                androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text("Open-source licences", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                    TipIconButton(R.drawable.ic_close, "Close") { onDismiss() }
+                }
+                Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
+                    for ((title, text) in parts) {
+                        if (title != null) Text(title, Modifier.padding(top = 24.dp, bottom = 8.dp), style = MaterialTheme.typography.titleSmall)
+                        Text(text, style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                            fontSize = 11.5.sp, lineHeight = 16.sp), color = scheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+    }
 }

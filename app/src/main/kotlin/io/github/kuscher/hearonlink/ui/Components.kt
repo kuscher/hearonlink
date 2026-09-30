@@ -265,33 +265,41 @@ fun Meter(percent: Int, faded: Boolean = false, height: Dp = 8.dp) {
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ModeGroup(selected: ListeningMode?, modes: List<ListeningMode>, enabled: Boolean = true, height: Dp = 76.dp, onSelect: (ListeningMode) -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
-        modes.forEachIndexed { i, m ->
-            ToggleButton(
-                checked = m == selected,
-                onCheckedChange = { onSelect(m) },
-                enabled = enabled,
-                modifier = Modifier.weight(1f).height(height).semantics { role = Role.RadioButton },
-                shapes = when (i) {
-                    0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                    modes.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-                    else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
-                },
-                colors = ToggleButtonDefaults.colors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    checkedContainerColor = MaterialTheme.colorScheme.primary,
-                    checkedContentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp),
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Glyph(m.icon, size = 22.dp)
-                    androidx.compose.foundation.text.BasicText(
-                        m.label, maxLines = if (' ' in m.label) 2 else 1,
-                        style = MaterialTheme.typography.labelMedium.copy(textAlign = TextAlign.Center, lineHeight = 14.sp, color = LocalContentColor.current),
-                        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp, stepSize = 0.5.sp),
-                    )
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val base = MaterialTheme.typography.labelMedium
+    val density = LocalDensity.current
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        // One label size for the whole group: the largest (≤ 12 sp) at which every word fits a button.
+        val gap = ButtonGroupDefaults.ConnectedSpaceBetween
+        val inner = with(density) { ((maxWidth - gap * (modes.size - 1)) / modes.size - 10.dp).toPx() }
+        val words = modes.flatMap { it.label.split(' ') }
+        var size = 12f
+        while (size > 8.5f && words.maxOf { measurer.measure(it, base.copy(fontSize = size.sp), maxLines = 1, softWrap = false).size.width } > inner) size -= 0.5f
+        val label = base.copy(fontSize = size.sp, lineHeight = (size + 2.5f).sp, textAlign = TextAlign.Center)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap)) {
+            modes.forEachIndexed { i, m ->
+                ToggleButton(
+                    checked = m == selected,
+                    onCheckedChange = { onSelect(m) },
+                    enabled = enabled,
+                    modifier = Modifier.weight(1f).height(height).semantics { role = Role.RadioButton },
+                    shapes = when (i) {
+                        0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                        modes.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                    },
+                    colors = ToggleButtonDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        checkedContainerColor = MaterialTheme.colorScheme.primary,
+                        checkedContentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp),
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Glyph(m.icon, size = 22.dp)
+                        Text(m.label, style = label, maxLines = 2)
+                    }
                 }
             }
         }

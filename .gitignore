@@ -10,3 +10,4 @@ probe/libs/
 .kotlin/
 *.iml
 .idea/
+*.pass

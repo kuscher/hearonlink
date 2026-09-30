@@ -78,6 +78,8 @@ class Link(private val context: Context, private val prefs: Prefs) {
 
     private val adapter get() = context.getSystemService(BluetoothManager::class.java)?.adapter
 
+    init { refresh() }
+
     private fun initial(address: String?): LinkState {
         val c = prefs.cache(address)
         val now = System.currentTimeMillis()
@@ -130,10 +132,15 @@ class Link(private val context: Context, private val prefs: Prefs) {
         _state.update { it.copy(status = status, pod = PodState(), batteries = it.batteries.expire(System.currentTimeMillis())) }
     }
 
-    /** Open a session if the AirPods are connected. Idempotent. */
+    /**
+     * Open a session if the AirPods are connected to this device. Idempotent. Never opens the channel
+     * without an existing Bluetooth link: that would page the AirPods and could pull them away from
+     * the phone or computer they're playing from.
+     */
     fun connect() {
         if (job?.isActive == true) return
         val d = device() ?: return refresh()
+        if (!L2cap.isConnected(d)) return refresh()
         if (prefs.address == null) prefs.address = d.address
         if (_state.value.address != d.address) _state.value = initial(d.address)
         job = scope.launch {

@@ -106,7 +106,11 @@ object Shots {
         val vd = dm.createVirtualDisplay("hearon-shot", w, h, dpi, reader.surface, DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY)
         val pres = Presentation(context, vd.display, android.R.style.Theme_DeviceDefault_NoActionBar_Fullscreen)
         val owner = Owner()
-        val settings = app.prefs.settings.value.copy(dark = if (dark) "dark" else "light", onboarded = kind != "onboarding", theme = "teal")
+        // A clean example setup (not the user's own): press twice for Overview, shake to show the desktop.
+        val settings = io.github.kuscher.hearonlink.data.Settings(
+            dark = if (dark) "dark" else "light", onboarded = kind != "onboarding", theme = "teal",
+            presses = mapOf("B.DOUBLE" to "OVERVIEW"), gesturesAnytime = true, nodAction = "PLAY_PAUSE", shakeAction = "SHOW_DESKTOP",
+        )
         val state = sample(connected = kind != "away")
         val view = ComposeView(pres.context).apply {
             setViewTreeLifecycleOwner(owner); setViewTreeSavedStateRegistryOwner(owner); setViewTreeViewModelStoreOwner(owner)
