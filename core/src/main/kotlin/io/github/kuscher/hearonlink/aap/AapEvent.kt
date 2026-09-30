@@ -49,6 +49,10 @@ sealed interface AapEvent {
         override fun toString() = "Sensor($service, ${payload.size} B)"
     }
     data class SensorStarted(val service: Int) : AapEvent
+    /** Custom EQ as the AirPods report it; [raw] is kept to echo the unknown flags byte. */
+    class Eq(val on: Boolean, val low: Int, val mid: Int, val high: Int, val raw: ByteArray) : AapEvent {
+        override fun toString() = "Eq(on=$on, $low/$mid/$high)"
+    }
     class Unknown(val type: Int, val opcode: Int, val payload: ByteArray) : AapEvent {
         override fun toString() = "Unknown(type $type, op 0x%02x, %s)".format(opcode, payload.hex())
     }
@@ -76,6 +80,7 @@ object AapParser {
         Aap.Op.STEM_PRESS -> if (p.size >= 2) AapEvent.StemPress(p.u8(0), p.u8(1)) else null
         Aap.Op.KEYS -> keys(p)
         Aap.Op.SENSOR -> sensor(p)
+        Aap.Op.CUSTOM_EQ -> if (p.size >= 7) AapEvent.Eq(p.u8(3) == 1, p.u8(4), p.u8(5), p.u8(6), p) else null
         else -> null
     }
 
@@ -140,6 +145,11 @@ object AapParser {
         }
         return AapEvent.Keys(irk, enc)
     }
+
+    /** Heart rate from a HEARTRATE sensor payload (bpm in byte 1), or null. */
+    fun heartRate(e: AapEvent.Sensor): Int? =
+        if ((e.service == Aap.SENSOR_HEART_RATE || e.service == Aap.SENSOR_HEART_RATE_CMD) && e.payload.size >= 2)
+            e.payload.u8(1).takeIf { it in 30..230 } else null
 
     private fun sensor(p: ByteArray): AapEvent? {
         if (p.size < 6 || p.u32le(0) != Aap.SENSOR_DESCRIPTOR) return null

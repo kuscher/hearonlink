@@ -4,37 +4,59 @@ package io.github.kuscher.hearonlink.aap
 enum class Feature {
     LISTENING_MODES, ADAPTIVE, CONVERSATION_AWARENESS, PERSONALIZED_VOLUME, HEAD_GESTURES,
     VOLUME_SWIPE, STEM, ONE_BUD_ANC, HEARING_PROTECTION, EAR_DETECTION,
+    CASE_SOUNDS, SLEEP_DETECTION, HEART_RATE, CROWN, OPTIMIZED_CHARGING, CALL_CONTROLS,
 }
 
-enum class Family(val displayName: String, val features: Set<Feature>) {
-    AIRPODS_1("AirPods", setOf(Feature.STEM, Feature.EAR_DETECTION)),
-    AIRPODS_2("AirPods (2nd gen)", setOf(Feature.STEM, Feature.EAR_DETECTION)),
-    AIRPODS_3("AirPods (3rd gen)", setOf(Feature.STEM, Feature.EAR_DETECTION, Feature.HEAD_GESTURES)),
-    AIRPODS_4("AirPods 4", setOf(Feature.STEM, Feature.EAR_DETECTION, Feature.HEAD_GESTURES, Feature.PERSONALIZED_VOLUME)),
+private val BUDS = setOf(Feature.STEM, Feature.EAR_DETECTION, Feature.CALL_CONTROLS, Feature.OPTIMIZED_CHARGING)
+
+enum class Family(val displayName: String, val features: Set<Feature>, val beats: Boolean = false) {
+    AIRPODS_1("AirPods", BUDS - Feature.OPTIMIZED_CHARGING),
+    AIRPODS_2("AirPods (2nd gen)", BUDS - Feature.OPTIMIZED_CHARGING),
+    AIRPODS_3("AirPods (3rd gen)", BUDS + Feature.HEAD_GESTURES),
+    AIRPODS_4("AirPods 4", BUDS + setOf(Feature.HEAD_GESTURES, Feature.PERSONALIZED_VOLUME, Feature.SLEEP_DETECTION)),
     AIRPODS_4_ANC(
         "AirPods 4 with ANC",
-        setOf(Feature.STEM, Feature.EAR_DETECTION, Feature.HEAD_GESTURES, Feature.PERSONALIZED_VOLUME,
+        BUDS + setOf(Feature.HEAD_GESTURES, Feature.PERSONALIZED_VOLUME, Feature.SLEEP_DETECTION, Feature.CASE_SOUNDS,
             Feature.LISTENING_MODES, Feature.ADAPTIVE, Feature.CONVERSATION_AWARENESS),
     ),
-    PRO("AirPods Pro", setOf(Feature.STEM, Feature.EAR_DETECTION, Feature.LISTENING_MODES, Feature.ONE_BUD_ANC)),
+    PRO("AirPods Pro", BUDS + setOf(Feature.LISTENING_MODES, Feature.ONE_BUD_ANC)),
     PRO_2(
         "AirPods Pro 2",
-        setOf(Feature.STEM, Feature.EAR_DETECTION, Feature.LISTENING_MODES, Feature.ADAPTIVE, Feature.CONVERSATION_AWARENESS,
-            Feature.PERSONALIZED_VOLUME, Feature.HEAD_GESTURES, Feature.VOLUME_SWIPE, Feature.ONE_BUD_ANC),
+        BUDS + setOf(Feature.LISTENING_MODES, Feature.ADAPTIVE, Feature.CONVERSATION_AWARENESS, Feature.PERSONALIZED_VOLUME,
+            Feature.HEAD_GESTURES, Feature.VOLUME_SWIPE, Feature.ONE_BUD_ANC, Feature.SLEEP_DETECTION, Feature.CASE_SOUNDS),
     ),
     PRO_2_USB_C("AirPods Pro 2 (USB-C)", PRO_2.features),
-    PRO_3("AirPods Pro 3", PRO_2.features + Feature.HEARING_PROTECTION),
-    MAX("AirPods Max", setOf(Feature.LISTENING_MODES)),
-    MAX_USB_C("AirPods Max (USB-C)", setOf(Feature.LISTENING_MODES)),
+    PRO_3("AirPods Pro 3", PRO_2.features + setOf(Feature.HEARING_PROTECTION, Feature.HEART_RATE)),
+    MAX("AirPods Max", setOf(Feature.LISTENING_MODES, Feature.CROWN)),
+    MAX_USB_C("AirPods Max (USB-C)", setOf(Feature.LISTENING_MODES, Feature.CROWN)),
     MAX_2(
         "AirPods Max 2",
-        setOf(Feature.LISTENING_MODES, Feature.ADAPTIVE, Feature.CONVERSATION_AWARENESS, Feature.PERSONALIZED_VOLUME),
+        setOf(Feature.LISTENING_MODES, Feature.ADAPTIVE, Feature.CONVERSATION_AWARENESS, Feature.PERSONALIZED_VOLUME, Feature.CROWN),
     ),
     AIRPODS_5("AirPods 5", AIRPODS_4.features),
-    UNKNOWN("AirPods", setOf(Feature.EAR_DETECTION)),
+
+    // Beats with Apple chips speak the same protocol; what they support shows up in their reports.
+    POWERBEATS_3("Powerbeats3", emptySet(), beats = true),
+    POWERBEATS_4("Powerbeats", emptySet(), beats = true),
+    POWERBEATS_PRO("Powerbeats Pro", setOf(Feature.EAR_DETECTION), beats = true),
+    POWERBEATS_PRO_2("Powerbeats Pro 2", setOf(Feature.EAR_DETECTION, Feature.LISTENING_MODES, Feature.HEART_RATE), beats = true),
+    POWERBEATS_FIT("Powerbeats Fit", setOf(Feature.LISTENING_MODES), beats = true),
+    BEATS_X("BeatsX", emptySet(), beats = true),
+    BEATS_FLEX("Beats Flex", emptySet(), beats = true),
+    BEATS_SOLO_3("Beats Solo3", emptySet(), beats = true),
+    BEATS_SOLO_4("Beats Solo 4", emptySet(), beats = true),
+    BEATS_SOLO_PRO("Beats Solo Pro", setOf(Feature.LISTENING_MODES), beats = true),
+    BEATS_SOLO_BUDS("Beats Solo Buds", emptySet(), beats = true),
+    BEATS_STUDIO_3("Beats Studio3", setOf(Feature.LISTENING_MODES), beats = true),
+    BEATS_STUDIO_PRO("Beats Studio Pro", setOf(Feature.LISTENING_MODES), beats = true),
+    BEATS_STUDIO_BUDS("Beats Studio Buds", setOf(Feature.LISTENING_MODES), beats = true),
+    BEATS_STUDIO_BUDS_PLUS("Beats Studio Buds +", setOf(Feature.LISTENING_MODES), beats = true),
+    BEATS_FIT_PRO("Beats Fit Pro", setOf(Feature.LISTENING_MODES, Feature.EAR_DETECTION), beats = true),
+
+    UNKNOWN("Headphones", setOf(Feature.EAR_DETECTION)),
     ;
 
-    val isHeadphones get() = this == MAX || this == MAX_USB_C || this == MAX_2
+    val isHeadphones get() = this in setOf(MAX, MAX_USB_C, MAX_2, BEATS_SOLO_3, BEATS_SOLO_4, BEATS_SOLO_PRO, BEATS_STUDIO_3, BEATS_STUDIO_PRO)
 
     companion object {
         private val byModelNumber = buildMap {
@@ -59,6 +81,10 @@ enum class Family(val displayName: String, val features: Set<Feature>) {
             0x2002 to AIRPODS_1, 0x200F to AIRPODS_2, 0x2013 to AIRPODS_3, 0x2019 to AIRPODS_4,
             0x201B to AIRPODS_4_ANC, 0x200E to PRO, 0x2014 to PRO_2, 0x2024 to PRO_2_USB_C, 0x2027 to PRO_3,
             0x200A to MAX, 0x201F to MAX_USB_C, 0x202D to MAX_2, 0x2036 to AIRPODS_5, 0x2030 to AIRPODS_5,
+            0x2003 to POWERBEATS_3, 0x200B to POWERBEATS_PRO, 0x200D to POWERBEATS_4, 0x201D to POWERBEATS_PRO_2,
+            0x202F to POWERBEATS_FIT, 0x2005 to BEATS_X, 0x2006 to BEATS_SOLO_3, 0x2009 to BEATS_STUDIO_3,
+            0x200C to BEATS_SOLO_PRO, 0x2010 to BEATS_FLEX, 0x2011 to BEATS_STUDIO_BUDS, 0x2012 to BEATS_FIT_PRO,
+            0x2016 to BEATS_STUDIO_BUDS_PLUS, 0x2017 to BEATS_STUDIO_PRO, 0x2025 to BEATS_SOLO_4, 0x2026 to BEATS_SOLO_BUDS,
         )
 
         fun ofModelNumber(n: String?): Family = n?.let { byModelNumber[it.trim().uppercase()] } ?: UNKNOWN

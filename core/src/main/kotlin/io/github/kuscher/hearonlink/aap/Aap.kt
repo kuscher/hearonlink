@@ -30,6 +30,7 @@ object Aap {
         const val KEYS = 0x31
         const val CONVERSATION = 0x4B
         const val FEATURE_FLAGS = 0x4D
+        const val CUSTOM_EQ = 0x63
     }
 
     fun message(opcode: Int, payload: ByteArray = ByteArray(0)): ByteArray =
@@ -80,28 +81,55 @@ object Aap {
     const val SENSOR_DESCRIPTOR = 0x00100000L
     const val SENSOR_ACTIVITY = 14
     const val SENSOR_DEVMOTION = 16
+    const val SENSOR_HEART_RATE = 19
+    const val SENSOR_HEART_RATE_CMD = 84
     const val HEAD_TRACKING_INTERVAL_US = 40_000L // 25 Hz
+    const val HEART_RATE_INTERVAL_US = 1_000_000L
+
+    /**
+     * Custom EQ (op 0x63): `[length u16 = 5][flags][state 1 on / 2 off][low][mid][high]`, bands 0–100.
+     * The flags byte isn't understood, so we echo the one the AirPods last sent (0 if none).
+     */
+    fun eq(template: ByteArray?, on: Boolean, low: Int, mid: Int, high: Int): ByteArray {
+        val flags = template?.takeIf { it.size >= 7 }?.get(2) ?: 0
+        return message(Op.CUSTOM_EQ, u16le(5) + byteArrayOf(flags, if (on) 1 else 2,
+            low.coerceIn(0, 100).toByte(), mid.coerceIn(0, 100).toByte(), high.coerceIn(0, 100).toByte()))
+    }
+}
+
+/** Stem presses the AirPods can forward to the host instead of handling them (control 0x39). */
+enum class Press(val code: Int, val bit: Int) {
+    SINGLE(5, 0x01), DOUBLE(6, 0x02), TRIPLE(7, 0x04), LONG(8, 0x08);
+    companion object {
+        fun of(code: Int) = entries.firstOrNull { it.code == code }
+        fun mask(presses: Collection<Press>) = presses.fold(0) { m, p -> m or p.bit }
+    }
 }
 
 /** Control command ids (op 0x09). Booleans are 1 = on, 2 = off. */
 object Control {
-    const val MIC_MODE = 0x01
+    const val MIC_MODE = 0x01              // 0 automatic, 1 always right, 2 always left
     const val EAR_DETECTION = 0x0A
     const val LISTENING_MODE = 0x0D
+    const val CLICK_HOLD = 0x16            // [right][left]: 1 noise control, 5 voice assistant
     const val PRESS_SPEED = 0x17
     const val HOLD_DURATION = 0x18
     const val LISTENING_CYCLE = 0x1A
     const val ONE_BUD_ANC = 0x1B
+    const val CROWN_DIRECTION = 0x1C       // AirPods Max: 1 reversed, 2 default
     const val TONE_VOLUME = 0x1F
     const val SWIPE_INTERVAL = 0x23
-    const val CALL_CONTROLS = 0x24
+    const val CALL_CONTROLS = 0x24         // 2 bytes; the second is 3 (default) or 2 (mute/end swapped)
     const val VOLUME_SWIPE = 0x25
     const val PERSONALIZED_VOLUME = 0x26
     const val CONVERSATION_AWARENESS = 0x28
     const val ADAPTIVE_LEVEL = 0x2E
+    const val CASE_SOUNDS = 0x31
     const val ALLOW_OFF = 0x34
     const val SLEEP_DETECTION = 0x35
     const val HEARING_PROTECTION = 0x37
+    const val RAW_PRESSES = 0x39           // bitmask of Press.bit forwarded to the host
+    const val OPTIMIZED_CHARGING = 0x3B
 
     const val ON = 1
     const val OFF = 2

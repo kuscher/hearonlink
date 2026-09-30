@@ -19,12 +19,12 @@ data class HeadSample(val timeMs: Long, val vertical: Float, val horizontal: Flo
  *    carries clearly more motion than the other ([dominance]); a shake is the same sideways.
  * 4. After a gesture the detector rests for [cooldownMs] and forgets the old swings.
  *
- * T = [baseThreshold] × sensitivity. Units are the AirPods' raw sensor units; the defaults are
- * placeholders until tuned on recorded traces.
+ * T = [baseThreshold] × sensitivity, in the AirPods' raw sensor units. Calibration sets it to about
+ * half of a typical nod ([Calibration.Result.scale]); 600 is the uncalibrated default.
  */
 class HeadGestureDetector(
     var sensitivity: Sensitivity = Sensitivity.NORMAL,
-    private val baseThreshold: Float = 600f,
+    var baseThreshold: Float = 600f,
     private val minSwings: Int = 2,
     private val windowMs: Long = 1600,
     private val dominance: Float = 1.8f,

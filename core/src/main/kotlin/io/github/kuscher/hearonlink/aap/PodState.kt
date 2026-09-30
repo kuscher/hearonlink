@@ -18,6 +18,7 @@ data class PodState(
     val talking: Boolean = false,
     val irk: ByteArray? = null,
     val encKey: ByteArray? = null,
+    val eq: AapEvent.Eq? = null,
 ) {
     val family: Family get() = Family.ofModelNumber(info?.modelNumber)
     val displayName: String get() = info?.name ?: family.displayName
@@ -33,6 +34,19 @@ data class PodState(
     val oneBudAnc: Boolean? get() = flag(Control.ONE_BUD_ANC)
     val volumeSwipe: Boolean? get() = flag(Control.VOLUME_SWIPE)
     val toneVolume: Int? get() = control(Control.TONE_VOLUME)
+    val sleepDetection: Boolean? get() = flag(Control.SLEEP_DETECTION)
+    val caseSounds: Boolean? get() = flag(Control.CASE_SOUNDS)
+    val earDetection: Boolean? get() = flag(Control.EAR_DETECTION)
+    val optimizedCharging: Boolean? get() = flag(Control.OPTIMIZED_CHARGING)
+    val hearingProtection: Boolean? get() = flag(Control.HEARING_PROTECTION)
+    /** 0 automatic, 1 always right, 2 always left. */
+    val micMode: Int? get() = control(Control.MIC_MODE)
+    /** True when mute and end-call presses are swapped (press once to end). */
+    val callControlsSwapped: Boolean? get() = controls[Control.CALL_CONTROLS]?.getOrNull(1)?.let { it == 2 }
+    /** AirPods Max: true when the Digital Crown direction is reversed. */
+    val crownReversed: Boolean? get() = control(Control.CROWN_DIRECTION)?.let { it == 1 }
+    /** Press-and-hold action per bud: 1 noise control, 5 voice assistant. */
+    val holdAction: Int? get() = control(Control.CLICK_HOLD)
 
     /** A feature shows when the family has it; a reported control state confirms it too. */
     fun has(f: Feature): Boolean {
@@ -44,6 +58,11 @@ data class PodState(
             Feature.ONE_BUD_ANC -> Control.ONE_BUD_ANC
             Feature.LISTENING_MODES -> Control.LISTENING_MODE
             Feature.HEARING_PROTECTION -> Control.HEARING_PROTECTION
+            Feature.CASE_SOUNDS -> Control.CASE_SOUNDS
+            Feature.SLEEP_DETECTION -> Control.SLEEP_DETECTION
+            Feature.CROWN -> Control.CROWN_DIRECTION
+            Feature.OPTIMIZED_CHARGING -> Control.OPTIMIZED_CHARGING
+            Feature.CALL_CONTROLS -> Control.CALL_CONTROLS
             else -> null
         }
         return f in family.features || (reported != null && controls.containsKey(reported))
@@ -73,6 +92,7 @@ data class PodState(
         is AapEvent.Control -> copy(controls = controls + (e.id to e.value.map { it.toInt() and 0xff }))
         is AapEvent.Conversation -> copy(talking = e.level in 1..5)
         is AapEvent.Keys -> copy(irk = e.irk ?: irk, encKey = e.encKey ?: encKey)
+        is AapEvent.Eq -> copy(eq = e)
         else -> this
     }
 
@@ -88,7 +108,8 @@ data class PodState(
     override fun equals(other: Any?): Boolean = other is PodState && handshakeDone == other.handshakeDone &&
         info == other.info && left == other.left && right == other.right && single == other.single &&
         case == other.case && leftPrimary == other.leftPrimary && controls == other.controls &&
-        talking == other.talking && irk.contentEqualsNullable(other.irk) && encKey.contentEqualsNullable(other.encKey)
+        talking == other.talking && irk.contentEqualsNullable(other.irk) && encKey.contentEqualsNullable(other.encKey) &&
+        eq?.let { listOf(it.on, it.low, it.mid, it.high) } == other.eq?.let { listOf(it.on, it.low, it.mid, it.high) }
 
     override fun hashCode(): Int = listOf(handshakeDone, info, left, right, single, case, leftPrimary, controls, talking).hashCode()
 }
