@@ -21,6 +21,11 @@ Day 1, later (user request "implement the possible but not yet built"):
 - Needs the user: enable the system-actions service, try custom presses, calibrate in the demo,
   check what "Show desktop" (Home) does on the Googlebook.
 
+Release 0.1.0 (2026-09-30): new headphones icon (tools/logo.py), README/licences/privacy/changelog,
+tools/release.sh + docs/RELEASING.md, CI; GitHub release v0.1.0 published (HearOnLink.apk, SHA256SUMS);
+release key backed up privately (a private folder). googlebook.studio listing text in
+store-submission/googlebook-studio.md; the repo must be public before submitting.
+
 Next steps:
 1. User runs first-run on the HP (permission → companion picker → tile → notifications).
 2. Record `./hol head 10` while the user nods and shakes; fix HeadMotion offsets + detector defaults.
