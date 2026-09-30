@@ -1,6 +1,6 @@
 # googlebook.studio listing
 
-Submitted with the form at https://github.com/kuscher/googlebook-tech-listings/issues/new?template=get-listed.yml
+Submitted 2026-09-30 as https://github.com/kuscher/googlebook-tech-listings/issues/1, with the form at https://github.com/kuscher/googlebook-tech-listings/issues/new?template=get-listed.yml
 (needs the repo to be public, with the APK in its latest release).
 
 - **App name:** HearOn Link
