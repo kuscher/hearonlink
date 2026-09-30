@@ -104,7 +104,7 @@ footer { font-size: 0.85rem; color: var(--muted) }
 
 <main>
 <header class="hero">
-  <div class="eyebrow">AirPods for Googlebooks and Android phones</div>
+  <div class="eyebrow">AirPods for Googlebooks and Android phones · working name</div>
   <h1>PodLink</h1>
   <p class="lede">A calm Material 3 Expressive companion for AirPods: battery, listening modes, conversation awareness, ear detection, head gestures, and a Quick Settings tile. It works on your Googlebook without root.</p>
   <div class="status">
@@ -150,7 +150,7 @@ footer { font-size: 0.85rem; color: var(--muted) }
     <table>
       <thead><tr><th>Feature</th><th>How</th><th>When</th></tr></thead>
       <tbody>
-        <tr><td>Battery: left, right, case</td><td>Pushed by the AirPods while connected. Last known values while away. 1 % steps from the case's Bluetooth adverts when you open it nearby.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
+        <tr><td>Battery: left, right, case</td><td>Pushed by the AirPods while connected. After the first session PodLink stores the AirPods' two Bluetooth keys, so their adverts give 1 % battery and a "case opened nearby" moment even while they play from another device.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
         <tr><td>Listening mode</td><td>Off, Transparency, Adaptive, Noise Cancellation. The app, the tile, the panel and the notification stay in sync.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
         <tr><td>Press-and-hold modes</td><td>Pick which modes a stem hold switches between (at least two).</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
         <tr><td>Conversation awareness</td><td>Turn it on or off. When you start talking, PodLink lowers the media volume, then restores it.</td><td class="st"><span class="pill ok">v0.1</span></td></tr>
@@ -265,7 +265,9 @@ footer { font-size: 0.85rem; color: var(--muted) }
         <tr><td>Older phones without Android 17's Bluetooth fix</td><td>Detect the failed channel, explain it, and keep battery and nearby alerts working over BLE.</td></tr>
         <tr><td>AirPods firmware changes</td><td>Parse defensively, drive the UI from the capability list, and keep recorded packet traces as regression tests. Mid-September firmware makes the AirPods' hands-free link flap on all Android devices. That isn't ours to fix, but PodLink should say so rather than look broken.</td></tr>
         <tr><td>AirPods owned by your iPhone or Mac</td><td>Head motion flows only to the device the AirPods currently serve. Show "In use on another device" and never grab them without asking.</td></tr>
-        <tr><td>Trademarks and name</td><td>"AirPods" only as a description ("for AirPods"), a clear non-affiliation note, no Apple images or fonts. "PodsLink" (an AirPods app) and a GitHub project "Podlink" exist, so the name needs a decision.</td></tr>
+        <tr><td>The name</td><td>"PodsLink – AirPods Battery" is on Play with over a million installs, one letter away and already advertising noise control and head gestures. pod.link is a podcast service, and a GitHub project "Podlink" (AirPods) started this month. HearLink is Philips' hearing-aid brand and app (Philips HearLink 2, 100k+ installs), and "AI EarLink" is an earbud companion on Play, so both are taken too. Renaming before the first release is cheap; "EarDeck" came up clear in a quick search.</td></tr>
+        <tr><td>Trademarks</td><td>"AirPods" only as a description ("for AirPods"), never in the app name, plus a clear non-affiliation note. No Apple images, fonts or animations, and avoid "Find My" and "Live Listen".</td></tr>
+        <tr><td>Another AirPods app holds the channel</td><td>Only one app at a time can open the control channel (CAPod and LibrePods block each other). Detect it and say which app to close, instead of failing silently.</td></tr>
         <tr><td>Battery drain</td><td>The service runs only while the AirPods are connected. Head motion streams only on demand. The BLE scan uses low power with a hardware filter.</td></tr>
       </tbody>
     </table>

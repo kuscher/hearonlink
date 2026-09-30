@@ -470,11 +470,63 @@ amplification. After writing it, send the 0x53 accommodation packet (`data/Trans
 
 ### 4.1 Short answer
 
-PLACEHOLDER-4.1
+**LibrePods needs root/Xposed only because of an Android Bluetooth-stack bug, plus (separately and
+always) for the Apple vendor-ID spoof.**
+
+- **The bug.** Every app-created classic L2CAP socket asks for **ERTM** mode. The stack asks each peer for
+  its L2CAP Extended Features, and AirPods don't answer until they get the AAP handshake. After a 3 s
+  timeout, `l2c_fcr_chk_chan_modes()` sees no ERTM support and returns `false`, so the channel is torn
+  down before or right after the Connection Request.
+- **The Xposed module** hooks that function in `libbluetooth_jni.so` (or `libbluetooth_qti.so`) inside the
+  Bluetooth process to always return 1. A second hook on `BTA_DmSetLocalDiRecord` rewrites the local SDP
+  Device ID vendor to Apple (0x004C).
+- **The fix.** Google fixed it internally (commit `51b17545d`, "Update Interop fix to be custom UUID based",
+  merged 2025-12-12, internal Bug 371797042, no aconfig flag). The stack now skips the ERTM requirement
+  and the extended-features query **for any bonded device whose SDP UUIDs include AAP's
+  `74ec2172-0bad-4d01-8f77-997b2be0722a`**.
+  - It is in `android17-release` / `android-17.0.0_r1`, and so in every Android 17 build that tracks AOSP.
+  - It is also in the Pixel Android 16 QPR3 (`CP1A`) Bluetooth module from March 2026, and in OEM
+    backports: OxygenOS/ColorOS 16, One UI 9 (A17).
+- **Our target.** The HP Googlebook 14 on Android 17 (`(build)`, module `com.google.android.bt`
+  371899999) opens PSM 0x1001 from a normal app with no root (probe, 2026-09-30). The remaining
+  non-public piece is the hidden-API socket constructor, not root.
 
 ### 4.2 Root cause in the Bluetooth stack
 
-PLACEHOLDER-4.2
+AOSP `packages/modules/Bluetooth`. The legacy `system/stack` L2CAP code is still used under the GD
+("Gabeldorsche") shim in current releases, so the check is the same in every build before the fix.
+
+1. **Sockets ask for ERTM.** `btif_sock_l2cap.cc` (A16 QPR2 L846; A17 L819-1033):
+   `const tL2CAP_ERTM_INFO obex_l2c_etm_opt = {L2CAP_FCR_ERTM_MODE, /* Mandatory for OBEX over l2cap */};` …
+   `if (!sock->is_le_coc) ertm_info.reset(new tL2CAP_ERTM_INFO(obex_l2c_etm_opt));`
+   There's no way for an app to request Basic mode.
+2. **The stack queries the peer's features.** On ACL up it sends an Extended Features Information Request
+   (`l2cu_send_peer_info_req(p_lcb, L2CAP_EXTENDED_FEATURES_INFO_TYPE)` in `l2c_link.cc`). AirPods "will not
+   respond with anything until a specific handshake packet is sent" ([issue 371713238](https://issuetracker.google.com/issues/371713238),
+   filed 2024-10-06, "L2CAP extended flow control packet blocks socket").
+   `l2c_info_resp_timer_timeout` fires after 3 s with `peer_ext_fea` lacking `L2CAP_EXTFEA_ENH_RETRANS`.
+3. **The check fails** (`system/stack/l2cap/l2c_fcr.cc`, unchanged android14 through 16-qpr2;
+   [A16 QPR2 L1595](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/heads/android16-qpr2-release/system/stack/l2cap/l2c_fcr.cc)):
+   ```cpp
+   if (!(p_ccb->p_lcb->peer_ext_fea & L2CAP_EXTFEA_ENH_RETRANS) &&
+       p_ccb->p_rcb->ertm_info.preferred_mode == L2CAP_FCR_ERTM_MODE) {
+     log::warn("L2CAP - Peer does not support our desired channel types");
+     p_ccb->p_rcb->ertm_info.preferred_mode = 0;
+     return false;
+   }
+   return true;
+   ```
+   `l2c_csm.cc` then releases the CCB and reports `L2CAP_CONN_OTHER_ERROR`. The disassembly of an Infinix
+   A16 `libbluetooth_jni.so` shows the same branch (`tbnz w8,#3` on `peer_ext_fea`, `cmp preferred_mode,#3`), per
+   [zondaxxx/podlink docs/l2cap-airpods-bug.md](https://github.com/zondaxxx/podlink/blob/main/docs/l2cap-airpods-bug.md).
+4. **Some OEM stacks** (seen on a Xiaomi 14 Pro in PR #785) get past this check with the hook, but
+   `allowed_modes` is already 0. `l2c_fcr_process_peer_cfg_req()` then disconnects on the peer's
+   ConfigReq ("L2C CFG: mode is ERTM, but peer does not support; Try BASIC … allowed:0 … incompatible
+   configurations disconnect").
+
+Linux/BlueZ never hit this because BlueZ opens the channel in Basic mode. Google's first internal attempt
+(`ab862ce1a`) states it directly: *"Airpods require default L2CAP channel as BASIC … Some devices do not
+support ERTM from peer and donot send response for INFO response during connection."*
 
 ### 4.3 What the Xposed module hooks
 
@@ -516,11 +568,87 @@ It uses the **libxposed API 101** (LSPosed/Vector). The module scope is `com.and
 
 ### 4.4 Upstream fix (AOSP)
 
-PLACEHOLDER-4.4
+- **Not on public Gerrit.** Searching `android-review.googlesource.com` for `bug:371713238`,
+  `message:371713238` and `l2c_fcr_chk_chan_modes` returns nothing. The commits appear on googlesource only
+  after merge and reference internal **Bug 371797042**.
+  - [`ab862ce1a`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/ab862ce1a844da5c220e52ae779b239e7bc04f2f),
+    "Add Interop fix to avoid querying L2CAP INFO request & related checks" (bhaktha@google.com, authored
+    2025-11-23, merged 2025-12-10). It matched by device name ("AirPods", "AirPods Pro") through a new
+    `INTEROP_L2CAP_DISABLE_ERTM` entry.
+  - `a2ee778a3` (2025-12-12) reverted it: "Removing this and adding better iop change based on uuid".
+  - **[`51b17545d`](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/51b17545d46b212a98b5b6f0bb58f99760ddde1a),
+    "Update Interop fix to be custom UUID based"** (merged 2025-12-12). This is the one that shipped:
+    ```cpp
+    // l2c_fcr_chk_chan_modes(): instead of `return false;`
+    if (l2c_should_skip_ertm(p_ccb->p_lcb->remote_bd_addr)) { log::info("candidate device for skip ertm"); return true; }
+    // l2c_link.cc: don't send the Extended Features info request to such devices
+    // l2c_utils.cc:
+    bool l2c_should_skip_ertm(const RawAddress& bd_addr) {
+      const Uuid RMT_CUSTOM_UUID = Uuid::FromString("74ec2172-0bad-4d01-8f77-997b2be0722a");
+      std::vector<bluetooth::Uuid> remote_uuids = btif_storage_get_services(bd_addr);
+      return std::find(remote_uuids.begin(), remote_uuids.end(), RMT_CUSTOM_UUID) != remote_uuids.end();
+    }
+    ```
+    "Flag: EXEMPT": there is no aconfig flag, so it's unconditional. It only applies once the AirPods' SDP
+    record (with the AAP UUID) is cached, which normal pairing does.
+- **Where it is.**
+  - In [`android17-release` l2c_fcr.cc L1609](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/heads/android17-release/system/stack/l2cap/l2c_fcr.cc)
+    and [l2c_utils.cc L3739](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/heads/android17-release/system/stack/l2cap/l2c_utils.cc),
+    tag `android-17.0.0_r1`.
+  - Not in `android16-qpr2-release`. There's no public `android16-qpr3-release` source.
+  - Module: the Bluetooth mainline APEX, renamed **`com.android.bt`** in A17 (formerly `com.android.btservices`).
+    Google-signed builds ship as `com.google.android.bt`, as on our Googlebook.
+  - Google on the issue (comment #899, quoted in [CAPod #215](https://github.com/d4rken-org/capod/issues/215),
+    2026-03-24): *"The change is available as part of Android open source Bluetooth stack starting March
+    2026. Mobile phone manufacturers will determine when this will be updated on their respective devices."*
+  - The issue-tracker JSON shows a timestamp of 2026-04-24 (probably resolution) and last modified 2026-06-06.
+- **Unverified.** Exactly which Google Play system update / mainline train delivered it to A16 QPR3 Pixels.
+  LibrePods says "latest Play system update"; the CAPod tracker says "April 2026 security update". There are
+  no public `aml_bt` release notes. A Galaxy S25 Ultra on the April 2026 Play system update was still broken,
+  so on non-Pixels the Play update alone doesn't bring it; the OEM must ship the new module/OS.
 
 ### 4.5 Which builds work without root (status 2026-09-30)
 
-PLACEHOLDER-4.5
+LibrePods' own gate (`utils/RootlessSupport.kt` L25-39):
+`if (SDK_INT >= 37) return true` (commit `bffb5c8`, 2026-06-10: *"consider all A17 devices supported … the app
+does work on OneUI 9"*). Otherwise it allows Pixel on SDK 36 with `Build.ID` starting `CP1A` (A16 QPR3), and
+OnePlus/Oppo/realme on SDK ≥ 36, with a manual bypass. The in-app list (`strings.xml` `check_the_repository_for_more_info`)
+names Pixel on the A16 March update + latest Play system update, Pixel on 17 Beta 3+, OxygenOS 16+ and ColorOS 16+.
+
+Community reports, mainly [LibrePods #487](https://github.com/librepods-org/librepods/issues/487) (2026-03-25 → 06-23)
+and the [CAPod tracker #538](https://github.com/d4rken-org/capod/issues/538) (04-23 → 09-29):
+
+| Works without root | Evidence (report date) |
+|---|---|
+| Pixel, A16 QPR3 (CP1A) | Pixel 6/8/10 Pro on CP1A.260305.018 (03-30/31); Pixel 10 Pro XL CP1A.260405.005 (05-09); needs the latest Play system update; some mixed reports |
+| Pixel, A17 Beta 3+ and A17 stable (CP2A) | several, from 03-27 |
+| GrapheneOS A17 | CP2A.260605.012 (06-23) |
+| OnePlus, OxygenOS 16 | OnePlus 12 16.0.5 (05-18); OnePlus 15 16.0.10.500 (09-12); OnePlus 12 16.0.10 in #784 (09-19) |
+| Oppo/OnePlus, ColorOS/OxygenOS 16 | per README; Find X9 Ultra ColorOS 16.0.8 in #648 |
+| Samsung, One UI 9 (A17) | S26U beta (05-13); S23+ beta (09-03); Z Flip6 beta 2 (09-25); S25U stable (09-29). Stable rollout from 2026-09-16 ([9to5Google](https://9to5google.com/2026/09/24/samsung-galaxy-s26-one-ui-9-android-17-rollout/)) |
+| Custom A17 ROMs (Evolution X) | works without the hook ([#700](https://github.com/librepods-org/librepods/issues/700)) |
+| Xiaomi Poco X7 Pro, HyperOS 3.1 | only after disabling `com.xiaomi.bluetooth` (05-07); see PR #760 |
+| **HP Googlebook 14, A17 (CL3B)** | our probe, 2026-09-30 |
+
+| Still broken | Evidence |
+|---|---|
+| Samsung One UI 8/8.5 (A16) | S24+, S25U, S26U through 09-24; maintainer: "Samsung devices need OneUI 9" |
+| GrapheneOS A16, Pixel 10a (CP1A, conflicting), Fairphone 6 A16, Moto g stylus 2025 A16 ([#745](https://github.com/librepods-org/librepods/issues/745)) | 05-09 |
+| Nothing OS ([#672](https://github.com/librepods-org/librepods/issues/672)), Poco F7 Pro HyperOS 3.0 | 07-09 |
+| Oppo Find X9, ColorOS 16.0.9, handshake never completes ([#726](https://github.com/librepods-org/librepods/issues/726)) | 08-14 |
+| realme UI 7 | no reports either way |
+
+Press: [Android Authority](https://www.androidauthority.com/librepods-using-airpods-with-android-unlock-3661340/) (2026-04-28),
+[heise](https://www.heise.de/en/news/Use-AirPods-with-Android-devices-LibrePods-app-lands-in-the-Play-Store-11275308.html) (04-28),
+[How-To Geek](https://www.howtogeek.com/google-quietly-fixed-airpods-compatibility-with-android-and-this-app-is-all-you-need/) (04-29).
+
+**Coexistence caveats for PodLink:**
+- Only one app can hold the PSM 0x1001 channel. CAPod and LibrePods conflict with each other
+  (`GAP_ConnOpen: Failure registering PSM 0x1001` in #487 went away when CAPod was removed).
+- OEM AirPods integrations (OnePlus/Oppo [#587](https://github.com/librepods-org/librepods/issues/587),
+  Xiaomi `com.xiaomi.bluetooth`) can grab the channel too.
+
+**PodLink should detect these apps and explain the conflict.**
 
 ### 4.6 How the app creates the L2CAP socket
 
@@ -543,7 +671,43 @@ PLACEHOLDER-4.5
 
 ### 4.7 What fails without root on an unfixed stack
 
-PLACEHOLDER-4.7
+- **Stack log on unfixed builds** (CAPod #215): `l2c_fcr_chk_chan_modes: L2CAP - Peer does not support our desired channel types`
+  → `send_app_err_code: … reason code:1` → app side `BluetoothSocketException: Connection failed for unknown reason`.
+  Before the fix `connect()` could also block for seconds, and even cause ANRs, per the issue description.
+- **LibrePods UI** (`AirPodsService.kt`):
+  - the high-priority notification "Unable to connect to AirPods over L2CAP" / "…LibrePods couldn't connect to
+    AirPods using L2CAP. Error: …" (L1812; currently short-circuited by an early `return`);
+  - toasts "Couldn't connect to socket: <msg>" and "Couldn't connect to socket: timeout." (L2720-2737);
+  - "Error: Socket created, but not connected." ([#229](https://github.com/librepods-org/librepods/issues/229)).
+- **Underlying IOException users paste:** `read failed, socket might closed or timeout, read ret: -1`
+  ([#188](https://github.com/librepods-org/librepods/issues/188), [#637](https://github.com/librepods-org/librepods/issues/637), #745, PR #785).
+- **Reflection breakage:** `NoSuchMethodException: Cannot find matching constructor` (the constructor gained a
+  leading `BluetoothAdapter` in A16 QPR3/A17) and `BluetoothSocketException: No PSM available`.
+- **Hidden-API denial if not exempted:** `Accessing hidden method Landroid/bluetooth/BluetoothDevice;->createInsecureL2capSocket(I)… (max-target-o, reflection, denied)`.
+  The LE-only public path gives `L2CA_RegisterLECoc: Invalid BLE PSM value, PSM: 0x1001`, and
+  `BluetoothSocketSettings` gives `IllegalArgumentException: invalid socketType - 3`.
+- **Onboarding "Not supported" page** (`strings.xml` L247-256): *"Many devices are not supported due to limitations
+  in the Android Bluetooth stack. On these devices, root access with an Xposed framework is required for full
+  functionality. This limitation has been addressed in newer Android versions…"*, followed by the device list above.
+
+### 4.8 Implications for PodLink on Googlebooks
+
+- Our target is Android 17 with Google's Bluetooth module, so the fix is present and **no root is needed** (verified).
+  Keep a runtime check anyway, for OEM builds: connect with a short timeout, and if it fails with the
+  signatures above, show "this build's Bluetooth stack lacks the AirPods fix" instead of a generic error.
+- **Socket creation** needs a hidden API: `BluetoothDevice.createInsecureL2capSocket/createL2capSocket(int)`
+  or the `BluetoothSocket` constructor. Use **LSPosed AndroidHiddenApiBypass (Apache-2.0)**, as our probe
+  and CAPod do.
+- **Risk.** A17 ART has a flag `com.android.art.flags.hiddenapi_jni_api_callers` (bug 403305904). For apps
+  targeting SDK > 36 it checks the *native caller* on JNI hidden-API access
+  ([art hidden_api.cc](https://android.googlesource.com/platform/art/+/refs/heads/android17-release/runtime/hidden_api.cc)).
+  - It would break LibrePods' pthread `setHiddenApiExemptions` trick.
+  - It's off in AOSP's `cp2a` config and on shipping builds so far.
+  - The Java-side Unsafe/ArtMethod approach of HiddenApiBypass is a different path.
+  - Keep a fallback ladder: `createInsecureL2capSocket` → `createL2capSocket` → reflected constructor.
+    Watch every ART mainline update.
+- **Don't ship an Xposed module.** The DID-spoof features are root-only and currently unstable with
+  firmware 9A348 (section 2).
 
 ---
 
@@ -765,4 +929,14 @@ on the VM, which fits the "no local emulators" constraint.
 - **Security/privacy:** proximity keys are logged (PR #810), and an "APK signing certificate fingerprint"
   request is open (#802).
 
-PLACEHOLDER-8-EXTRA
+- **Android 17 status.** The L2CAP fix is in AOSP A17 (section 4.4). The known A17-specific problems are
+  the hook-induced disconnect cycling (#700) and the firmware-induced HFP flap and Apple-DID drops (#782).
+  LibrePods targets and compiles against SDK 37.
+- **x86_64.** The v1.0.0-rc1 FOSS APK ships x86 and x86_64 builds of both native libs. Nothing in LibrePods'
+  protocol code is ABI-specific. For PodLink the protocol layer is pure Kotlin anyway.
+- **Other apps for context:**
+  - [CAPod](https://github.com/d4rken-org/capod) (GPL-3.0; icons/docs/translations excluded) added **rootless
+    AAP over L2CAP on 2026-03-30** alongside its BLE features. Its `L2capSocketFactory.kt` tries
+    `BluetoothSocketSettings`, then a HiddenApiBypass-style `setHiddenApiExemptions("Landroid/bluetooth/")`
+    + `createInsecureL2capSocket(psm)`. Its maintainer calls root "out of scope". Latest v5.4.0-rc0 (2026-09-24).
+  - MagicPods: Windows (paid, closed) and Linux/Steam Deck (GPL-3.0 core); no Android version.
