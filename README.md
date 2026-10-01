@@ -200,7 +200,8 @@ Needs JDK 21 and the Android SDK (platform 37).
 Builds you make yourself are signed with your own key, so uninstall a release before installing
 one. `./hol` is the development helper (build, install, test hooks, off-screen renders) for a
 Googlebook connected over Wireless debugging. [CLAUDE.md](CLAUDE.md) explains how the code is
-organised, and [docs/RELEASING.md](docs/RELEASING.md) how releases are made.
+organised, and [docs/RELEASING.md](docs/RELEASING.md) how releases are made (a tag, built and
+signed on GitHub).
 
 ## About this project
 

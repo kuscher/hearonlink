@@ -94,3 +94,12 @@ firmware doesn't report it), hearing-protection level (0x38), in-case tone volum
 v0.3.0 published on GitHub 2026-10-01 (the user: "re-release it on github"); the release APK is on the HP. On Play,
 0.3.0 (4) replaced 0.2.1 (3) before 0.2.1's review ended (What's new covers both), was sent for review on
 2026-10-01 and passed: it's live to the closed testers (Play Console showed no changes in review at about 01:00 PDT).
+
+Releases from a tag (2026-10-01): `.github/workflows/release.yml` builds, signs and publishes on GitHub Actions, so a
+release no longer needs the Mac, the HP or the key file. Bump the version, add the notes and Play's "What's new", push,
+then `git tag v<version> && git push origin v<version>`: the signed APK becomes the GitHub release and the bundle a
+DRAFT on Play's closed-testing track (`tools/play-upload.mjs`); Send for review stays a button in the Play Console. The
+signing key is in the GitHub environment `release`, the Play key in `play` (only `main` and `v*` tags get them).
+Verified with a dry run ("Run workflow", run 36842450128): 0.3.0 (4) built, the APK and the bundle carry the release
+certificate, the Play key works. NOT exercised yet: the tag path itself (the version and notes checks, creating the
+GitHub release, the upload to Play); the first tagged release is its first real run. Details in docs/RELEASING.md.

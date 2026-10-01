@@ -32,12 +32,16 @@ with `scripts/play/graphics.mjs` in kuscher/googlebook-tech.
 1. **App signing:** *Use existing app signing key*, uploaded with Google's PEPK tool from `~/.config/hearonlink/keystore.jks`
    (alias `hearonlink`, SHA-256 `A1:12:57:4D:…:26:33:47:B6`), so the Play build and the APKs on GitHub have the same
    signature and people can move between them without uninstalling. The same key is the upload key.
-2. **Build the bundle:** `tools/release.sh` → `executables/release-<version>/HearOnLink-<version>.aab` (and the APKs),
-   signed with that key. Each upload needs a higher `versionCode` than the last (1 for 0.1.0, 2 for 0.2.0).
+2. **Build the bundle:** pushing a tag `v<version>` builds and signs it on GitHub (see
+   [docs/RELEASING.md](../docs/RELEASING.md)). On a machine that has the key, `tools/release.sh` still writes
+   `executables/release-<version>/HearOnLink-<version>.aab` (and the APKs). Each upload needs a higher `versionCode`
+   than the last (1 for 0.1.0, 2 for 0.2.0).
 3. **Closed test first** (personal developer account: 12 testers opted in for 14 days before production), with the
    Google Group googlebook-studio-testers@googlegroups.com.
-4. **Release:** add the bundle to the closed testing track, paste `release-notes.txt`, file the foreground-service
-   declaration with its video, send for review.
+4. **Release:** the tag puts the bundle on the closed testing track as a draft, with `release-notes.txt` as its
+   "What's new". In the Play Console, check the draft and press Send for review; nothing is sent automatically. (By
+   hand: add the bundle to the track and paste `release-notes.txt`.) The foreground-service declaration and its video
+   are filed.
 
 ## 0.2.0 (2): no accessibility service
 

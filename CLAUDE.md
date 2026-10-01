@@ -40,7 +40,18 @@ never copy LibrePods (GPL-3.0) code, prose, fonts or images; byte layouts/opcode
   install clears it (no user data to lose during development; ask before doing it once the user uses it).
 - `pm grant` needs `--user 10` on the HP. Fresh installs are in the stopped state: broadcasts use `-f 0x20`.
 - Debug builds are signed with the release key (~/.config/hearonlink, alias hearonlink,
-  cert SHA-256 A1:12:57:4D:…:26:33:47:B6), so they replace releases.
+  cert SHA-256 A1:12:57:4D:…:26:33:47:B6) on a machine that has it, so they replace releases.
+
+## Releasing (docs/RELEASING.md)
+- No machine or key file needed: bump `versionCode`/`versionName`, add `docs/release-notes/<version>.md`
+  (+ CHANGELOG.md) and Play's "What's new" (`store-submission/listing/en-US/release-notes.txt`, max 500
+  characters), commit, push, then `git tag v<version> && git push origin v<version>`.
+- The tag runs `.github/workflows/release.yml`: signed APK as the GitHub release (`HearOnLink.apk`,
+  `HearOnLink-<version>.apk`, `SHA256SUMS`), the bundle as a DRAFT on Play's closed-testing track.
+  Sending it for review stays a button in the Play Console; never automate that.
+- The key is in the GitHub environment `release` (the Play key in `play`); never read, copy or print
+  key material. "Run workflow" on the Actions tab is a dry run (nothing published). `tools/release.sh`
+  still works where `~/.config/hearonlink` has the key.
 
 ## Protocol gotchas (see docs/research/device-findings.md)
 - Control writes are applied but NOT echoed: update state optimistically.
