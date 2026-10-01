@@ -18,7 +18,6 @@ import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.os.Build
-import android.os.ParcelUuid
 import android.os.SystemClock
 import android.util.Log
 import io.github.kuscher.hearonlink.aap.Family
@@ -105,24 +104,28 @@ object Companion {
 
     fun associated(context: Context): Boolean = manager(context)?.myAssociations?.isNotEmpty() == true
 
-    /** Shows Android's device picker filtered to AirPods; [onChooser] launches its dialog. */
-    fun associate(context: Context, onChooser: (IntentSender) -> Unit, onDone: (String?) -> Unit, onError: (String) -> Unit) {
+    /**
+     * Links the already-paired AirPods at [address]: Android shows one dialog to confirm them, which
+     * [onChooser] launches. The request names that one device, because only then does Android look
+     * among the paired devices; a general "AirPods" request searches for devices in pairing mode,
+     * and paired AirPods never turn up in its list.
+     */
+    fun associate(context: Context, address: String, onChooser: (IntentSender) -> Unit, onDone: (String?) -> Unit, onError: (String) -> Unit) {
         val cdm = manager(context) ?: return onError("This device has no companion-device support")
-        val filter = BluetoothDeviceFilter.Builder()
-            .addServiceUuid(ParcelUuid(Link.AAP_UUID), null)
-            .build()
-        val request = AssociationRequest.Builder().addDeviceFilter(filter).setSingleDevice(false).build()
+        val filter = BluetoothDeviceFilter.Builder().setAddress(address).build()
+        val request = AssociationRequest.Builder().addDeviceFilter(filter).setSingleDevice(true).build()
         cdm.associate(request, context.mainExecutor, object : CompanionDeviceManager.Callback() {
-            override fun onAssociationPending(intentSender: IntentSender) = onChooser(intentSender)
+            override fun onAssociationPending(intentSender: IntentSender) { Log.i(Link.TAG, "companion: dialog ready"); onChooser(intentSender) }
             override fun onAssociationCreated(associationInfo: android.companion.AssociationInfo) {
                 val app = context.hearOn
-                val mac = associationInfo.deviceMacAddress?.toString()?.uppercase()
+                val mac = associationInfo.deviceMacAddress?.toString()?.uppercase() ?: address
+                Log.i(Link.TAG, "companion: linked (${associationInfo.id})")
                 app.prefs.associationId = associationInfo.id
                 if (mac != null) app.link.select(mac)
                 observe(context)
                 onDone(mac)
             }
-            override fun onFailure(error: CharSequence?) = onError(error?.toString() ?: "Couldn't link the AirPods")
+            override fun onFailure(error: CharSequence?) { Log.i(Link.TAG, "companion: $error"); onError(error?.toString() ?: "Couldn't link the AirPods") }
         })
     }
 

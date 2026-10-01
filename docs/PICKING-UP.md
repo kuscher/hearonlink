@@ -66,3 +66,13 @@ BluetoothDevice.createUsingSocketSettings(BluetoothSocketSettings.Builder().setS
 .setL2capPsm(…)), worth trying on the HP so HiddenApiBypass is only needed below API 36 (or not at all).
 Still open: (1) the user picks the AirPods in the app once and tries Show desktop / Open an app; (2) edit
 kuscher/googlebook-tech-listings#1's description.
+
+0.2.1 (2026-10-01, on the HP): the user's report "we lost a bunch of features" was the not-connected state (the
+AirPods had left for ~2.5 min; my first diagnostic `./hol debug` wiped the app's log, so a late-reporting session
+can't be ruled out). Fixes: away keeps the controls, disabled; `LinkState.view` falls back to the cache; the CDM
+request names the bonded device (the old UUID-only picker stayed empty for paired AirPods); picking Show desktop /
+Open an app asks for the confirmation at once; desktop Back moved into the right pane; Settings is two-pane too.
+NOT verified: the real CDM single-device dialog (needs the user's tap); the log says "companion: dialog ready /
+linked (id) / <error>". Unrelated find that night: system volume was muted by the another app's "another app: Filming"
+Do Not Disturb rule (it disallows media).
+

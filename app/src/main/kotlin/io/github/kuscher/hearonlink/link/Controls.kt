@@ -68,7 +68,7 @@ class Controls(private val context: Context, private val prefs: Prefs, private v
         }
         // Head gestures anytime: only with a bud in an ear, never while the demo is open.
         val inEar = s.pod.left.ear == EarState.IN_EAR || s.pod.right.ear == EarState.IN_EAR
-        val anytime = st.gesturesAnytime && s.connected && s.pod.has(Feature.HEAD_GESTURES) && inEar && !demoOpen
+        val anytime = st.gesturesAnytime && s.connected && s.view.has(Feature.HEAD_GESTURES) && inEar && !demoOpen
         link.trackHead("anytime", anytime)
         link.trackHead("call", ringing && s.connected && !demoOpen)
         detector.sensitivity = st.sensitivity

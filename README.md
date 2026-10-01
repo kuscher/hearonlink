@@ -75,11 +75,11 @@ No root, no account, no internet.
   it; nothing floats over the content.
 - **Quick Settings.** The tile shows the listening mode and battery. A tap opens a small panel
   with the essentials; a long-press opens HearOn Link.
-- **Starts on its own.** You pick your AirPods once in Android's own device picker. From then on
+- **Starts on its own.** You pick your AirPods once and confirm them in Android's own dialog. From then on
   HearOn Link wakes up when they connect, without a battery-optimisation exception.
 - **Stem presses and head gestures for the desktop.** Show the desktop or open any app from a
   press or a shake of the head, without an accessibility service: Android allows it for the
-  AirPods you picked in its own device picker.
+  AirPods you confirmed in its own dialog.
 - **A notification with three numbers.** Left, right and case as Android 17 metrics, with
   one-tap listening modes.
 
@@ -135,12 +135,12 @@ Android 16 QPR3 on a Pixel: older Bluetooth stacks can't open the AirPods' contr
 2. Open it from Chrome's downloads or the Files app. If Android asks, allow Chrome (or Files) to
    install apps, then tap **Install**.
 3. Open **HearOn Link** and follow the short setup: allow Nearby devices, pick your AirPods in
-   Android's device picker, add the Quick Settings tile, allow notifications.
+   the list and confirm them in Android's dialog, add the Quick Settings tile, allow notifications.
 
 To update, install a newer `HearOnLink.apk` over the old one; your settings stay.
 
-**Show desktop and Open an app** work once you've picked your AirPods in Android's device picker
-(the setup's second step; the Stem presses page offers it again if you skipped it). HearOn Link has
+**Show desktop and Open an app** work once you've confirmed your AirPods in Android's dialog (the
+setup's second step; if you skipped it, the app asks when you first pick one of these actions). HearOn Link has
 no accessibility service and needs no special settings.
 
 Only one app at a time can talk to your AirPods this way: close CAPod or LibrePods if you use them.

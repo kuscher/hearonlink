@@ -57,13 +57,22 @@ never copy LibrePods (GPL-3.0) code, prose, fonts or images; byte layouts/opcode
 
 ## Design rules (canvas https://claude.ai/artifact/TPTz5wiH4FfdQvC5mhV1bu, approved direction)
 - Nothing floats; header row below the system caption, caption painted the same colour.
-- Googlebook ≥840 dp: device pane left (452 dp, chrome colour), settings right (max 680 dp).
+- Googlebook ≥840 dp: device pane left (452 dp, chrome colour), settings right (max 680 dp), on every
+  page but the full-window demo. The header keeps the AirPods' name; Back and the page title sit at
+  the top of the right pane (never Back in the window's top-left corner beside the device pane).
+- The UI reads `LinkState.view`, not `pod`: live values filled in with the remembered model and
+  settings until the AirPods report them, and all from memory while away. Away = same controls,
+  switched off (the user read hidden controls as lost features).
 - Only show what the AirPods support (Family features + reported controls). Root-only features never show.
 - No INTERNET permission, no overlays, and NO accessibility service (removed in 0.2.0 at the user's
   request: it makes a Play release hard; don't bring it back). "Show desktop" is the Home intent
   (ACTION_MAIN + CATEGORY_HOME) and "Open an app" a launch intent; both start an activity from the
-  background, which Android allows only for a companion app (CDM association), so the Presses and
-  Gestures pages show a "Choose your AirPods first" card when there is none. Stored action values:
+  background, which Android allows only for a companion app (CDM association). Being connected is
+  not an association: picking such an action asks for it right away (`rememberCompanionLinker`), and
+  a reminder card shows only while it's missing. The association request must name the paired device
+  (`BluetoothDeviceFilter.setAddress` + `setSingleDevice(true)`): only then does Android look among
+  bonded devices; a UUID-only request scans for devices in pairing mode and its list stays empty.
+  Stored action values:
   the Action name, plus ":package" for OPEN_APP; unknown names (0.1's Overview, Back, Notifications,
   Quick Settings, Screenshot, Lock) fall back to AirPods default (presses) or Nothing (gestures).
   Peek itself is a WM key gesture (TOGGLE_DESKTOP_HOME_SCREEN_PEEK) apps can't send.

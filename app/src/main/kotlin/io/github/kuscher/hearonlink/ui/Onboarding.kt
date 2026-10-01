@@ -75,7 +75,7 @@ fun Onboarding(s: LinkState, c: Ctx) {
             Step(1, "Allow Nearby devices", "HearOn Link talks to your AirPods over Bluetooth. It never uses your location.", step) {
                 PillButton("Allow", filled = true) { perms.launch(arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)) }
             }
-            Step(2, "Choose your AirPods", "Pick them from the system list. HearOn Link talks only to the AirPods you choose.", step) {
+            Step(2, "Choose your AirPods", "Pick them here, then confirm in Android's dialog. HearOn Link talks only to the AirPods you choose.", step) {
                 val bonded = remember(refresh, hasBt) { c.link.bondedAirPods() }
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (bonded.isEmpty()) {
@@ -85,20 +85,19 @@ fun Onboarding(s: LinkState, c: Ctx) {
                             TextAction("Check again") { refresh++ }
                         }
                     } else {
-                        PillButton("Choose AirPods", R.drawable.ic_bt, filled = true) {
+                        // One button per paired pair of AirPods; Android then asks to confirm that one.
+                        for ((i, d) in bonded.withIndex()) PillButton(d.name ?: d.address, R.drawable.ic_bt, filled = i == 0) {
                             error = null
-                            Companion.associate(context,
+                            Companion.associate(context, d.address,
                                 onChooser = { chooser.launch(IntentSenderRequest.Builder(it).build()) },
                                 onDone = { chosen = true },
-                                onError = { e ->
-                                    // No companion support: pick directly (works, just no auto-start in the background).
-                                    error = e
-                                },
+                                onError = { e -> error = e },
                             )
                         }
                         if (error != null) {
-                            Hint("The system picker didn't work ($error). Pick them here instead:")
-                            for (d in bonded) TextAction(d.name ?: d.address) { c.link.select(d.address); chosen = true }
+                            // Cancelled, or no companion support: they still work, without the background extras.
+                            Hint("Android didn't link them ($error). You can use them anyway; only Show desktop and Open an app from a press or a gesture need the link.")
+                            for (d in bonded) TextAction("Use ${d.name ?: d.address} anyway") { c.link.select(d.address); chosen = true }
                         }
                     }
                 }

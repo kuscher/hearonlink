@@ -1,6 +1,7 @@
 package io.github.kuscher.hearonlink.ui
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings as AndroidSettings
@@ -155,7 +156,7 @@ private fun sw(v: Boolean?, live: Boolean) = if (live) (v ?: false) else v
 
 @Composable
 fun DevicePane(s: LinkState, c: Ctx, modifier: Modifier = Modifier, artWidth: Dp = 250.dp) {
-    val p = s.pod
+    val p = s.view
     val live = s.connected
     Column(modifier, verticalArrangement = Arrangement.spacedBy(22.dp)) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -163,18 +164,17 @@ fun DevicePane(s: LinkState, c: Ctx, modifier: Modifier = Modifier, artWidth: Dp
         }
         BatteryTrio(batteryCells(s))
         if (!live) AwayCard(s, c)
-        if (live && p.has(Feature.LISTENING_MODES)) Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // While the AirPods are away the controls they have stay in place, switched off.
+        if (p.has(Feature.LISTENING_MODES)) Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Listening mode", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            ModeGroup(p.listeningMode, availableModes(p), onSelect = c.link::setMode)
-            if (p.listeningMode == ListeningMode.ADAPTIVE && p.adaptiveLevel != null) AdaptiveSlider(p, c)
+            ModeGroup(p.listeningMode.takeIf { live }, availableModes(p), enabled = live, onSelect = c.link::setMode)
+            if (live && p.listeningMode == ListeningMode.ADAPTIVE && p.adaptiveLevel != null) AdaptiveSlider(p, c)
         }
-        if (live) {
-            val rows = buildList<@Composable (Modifier) -> Unit> {
-                if (p.has(Feature.CONVERSATION_AWARENESS)) add { m -> SwitchRow(m, "Conversation awareness", "Turns media down when you speak", p.conversationAwareness) { c.link.setFlag(Control.CONVERSATION_AWARENESS, it) } }
-                if (p.has(Feature.PERSONALIZED_VOLUME)) add { m -> SwitchRow(m, "Personalized volume", "Adjusts to your surroundings", p.personalizedVolume) { c.link.setFlag(Control.PERSONALIZED_VOLUME, it) } }
-            }
-            if (rows.isNotEmpty()) Group(rows = rows)
+        val rows = buildList<@Composable (Modifier) -> Unit> {
+            if (p.has(Feature.CONVERSATION_AWARENESS)) add { m -> SwitchRow(m, "Conversation awareness", "Turns media down when you speak", p.conversationAwareness.takeIf { live }) { c.link.setFlag(Control.CONVERSATION_AWARENESS, it) } }
+            if (p.has(Feature.PERSONALIZED_VOLUME)) add { m -> SwitchRow(m, "Personalized volume", "Adjusts to your surroundings", p.personalizedVolume.takeIf { live }) { c.link.setFlag(Control.PERSONALIZED_VOLUME, it) } }
         }
+        if (rows.isNotEmpty()) Group(rows = rows)
     }
 }
 
@@ -198,7 +198,7 @@ private fun AwayCard(s: LinkState, c: Ctx) {
         LinkStatus.BLUETOOTH_OFF -> "Bluetooth is off" to "Turn Bluetooth on to use your AirPods."
         LinkStatus.FAILED -> "Couldn't reach the AirPods' controls" to ((s.message?.let { "$it. " } ?: "") + "If another AirPods app is running (CAPod, LibrePods), close it and try again.")
         LinkStatus.CONNECTING -> "Connecting…" to "Talking to your AirPods."
-        else -> "Not connected" to "Open the case near this device, or connect in Bluetooth settings. Battery shows when each part was last seen."
+        else -> "Not connected" to "Open the case near this device, or connect in Bluetooth settings. Battery shows when each part was last seen; the controls come back when the AirPods connect."
     }
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(LocalHearOnColors.current.card).padding(20.dp),
@@ -392,33 +392,46 @@ private fun AppIcon(pkg: String, size: Dp = 36.dp) {
 private fun opensWindow(stored: String?, fallback: Action = Action.DEFAULT) = Action.of(stored, fallback).let { it == Action.SHOW_DESKTOP || it == Action.OPEN_APP }
 
 /**
- * Android lets a companion app open the desktop or another app from the background. Shown when
- * such an action is picked but the AirPods were never chosen in Android's device picker.
+ * Android lets a companion app open the desktop or another app from the background, once the user
+ * has confirmed the AirPods in Android's own dialog. Being connected isn't that confirmation, so
+ * [ask] shows the dialog as soon as an action needs it, and [CompanionCard] reminds if it was declined.
  */
+class CompanionLinker(val linked: Boolean, val error: String?, val deviceName: String?, val ask: () -> Unit)
+
+@SuppressLint("MissingPermission")
 @Composable
-private fun CompanionCard(needed: Boolean) {
-    if (LocalSample.current) return
+private fun rememberCompanionLinker(): CompanionLinker {
     val context = LocalContext.current
-    var linked by remember { mutableStateOf(Companion.associated(context)) }
+    val sample = LocalSample.current
+    val device = remember { if (sample) null else context.hearOn.link.device() }
+    var linked by remember { mutableStateOf(sample || Companion.associated(context)) }
     var error by remember { mutableStateOf<String?>(null) }
     val chooser = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { }
-    if (!needed || linked) return
+    return CompanionLinker(linked, error, device?.name) {
+        if (linked) return@CompanionLinker
+        error = null
+        val d = device
+        if (d == null) error = "no AirPods are paired with this device"
+        else Companion.associate(context, d.address, onChooser = { chooser.launch(IntentSenderRequest.Builder(it).build()) }, onDone = { linked = true }, onError = { error = it })
+    }
+}
+
+/** Shown while a chosen action needs the confirmation and it hasn't been given. */
+@Composable
+private fun CompanionCard(linker: CompanionLinker, needed: Boolean) {
+    if (!needed || linker.linked) return
+    val name = linker.deviceName ?: "your AirPods"
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.primaryContainer).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("Choose your AirPods first", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+        Text("One more step for Show desktop and Open an app", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
         Text(
-            error?.let { "The system picker didn't work ($it). Showing the desktop or opening an app from a press or a gesture needs it." }
-                ?: "To show the desktop or open an app while HearOn Link is in the background, pick your AirPods in Android's device list once.",
+            linker.error?.let { "Android didn't confirm them ($it). Without it, a press or a gesture can't show the desktop or open an app while HearOn Link is in the background." }
+                ?: "Android only lets HearOn Link show the desktop or open an app from the background after you confirm $name in its own dialog. Once is enough.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
-        Row {
-            PillButton("Choose AirPods", R.drawable.ic_bt, filled = true) {
-                error = null
-                Companion.associate(context, onChooser = { chooser.launch(IntentSenderRequest.Builder(it).build()) }, onDone = { linked = true }, onError = { error = it })
-            }
-        }
+        Row { PillButton("Confirm $name", R.drawable.ic_bt, filled = true) { linker.ask() } }
     }
 }
 
@@ -511,6 +524,7 @@ fun PageContent(page: Page, s: LinkState, settings: Settings, c: Ctx) {
 
 @Composable
 private fun PressesPage(settings: Settings, c: Ctx) {
+    val linker = rememberCompanionLinker()
     Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
         Hint("Pick what each press does. Presses left on “AirPods default” stay with the AirPods, so they work the same with your other devices. Custom presses work while HearOn Link is connected.")
         Group(null, listOf { m ->
@@ -521,10 +535,11 @@ private fun PressesPage(settings: Settings, c: Ctx) {
             { m: Modifier ->
                 ActionRow(m, PRESS_NAMES[press]!!, settings.presses["$bud.${press.name}"], Action.forPresses) { v ->
                     c.prefs.update { st -> st.copy(presses = st.presses + ("$bud.${press.name}" to v)) }
+                    if (opensWindow(v)) linker.ask()
                 }
             }
         })
-        CompanionCard(Press.entries.any { p -> opensWindow(settings.pressAction("L", p)) || opensWindow(settings.pressAction("R", p)) })
+        CompanionCard(linker, Press.entries.any { p -> opensWindow(settings.pressAction("L", p)) || opensWindow(settings.pressAction("R", p)) })
     }
 }
 
@@ -534,6 +549,7 @@ private fun GesturesPage(s: LinkState, settings: Settings, c: Ctx) {
     val callPerms = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { res ->
         if (res.values.all { it }) c.prefs.update { it.copy(gestureCalls = true) }
     }
+    val linker = rememberCompanionLinker()
     Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(88.dp).clip(RoundedCornerShape(30.dp)).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
@@ -547,10 +563,10 @@ private fun GesturesPage(s: LinkState, settings: Settings, c: Ctx) {
         }
         Group("Anytime", listOf(
             { m -> SwitchRow(m, "Use head gestures anytime", "While an AirPod is in your ear. Uses a little more battery.", settings.gesturesAnytime) { v -> c.prefs.update { it.copy(gesturesAnytime = v) } } },
-            { m -> ActionRow(m, "Nod", settings.nodAction, Action.forGestures, Action.NONE, enabled = settings.gesturesAnytime) { v -> c.prefs.update { it.copy(nodAction = v) } } },
-            { m -> ActionRow(m, "Shake your head", settings.shakeAction, Action.forGestures, Action.NONE, enabled = settings.gesturesAnytime) { v -> c.prefs.update { it.copy(shakeAction = v) } } },
+            { m -> ActionRow(m, "Nod", settings.nodAction, Action.forGestures, Action.NONE, enabled = settings.gesturesAnytime) { v -> c.prefs.update { it.copy(nodAction = v) }; if (opensWindow(v, Action.NONE)) linker.ask() } },
+            { m -> ActionRow(m, "Shake your head", settings.shakeAction, Action.forGestures, Action.NONE, enabled = settings.gesturesAnytime) { v -> c.prefs.update { it.copy(shakeAction = v) }; if (opensWindow(v, Action.NONE)) linker.ask() } },
         ))
-        CompanionCard(settings.gesturesAnytime && (opensWindow(settings.nodAction, Action.NONE) || opensWindow(settings.shakeAction, Action.NONE)))
+        CompanionCard(linker, settings.gesturesAnytime && (opensWindow(settings.nodAction, Action.NONE) || opensWindow(settings.shakeAction, Action.NONE)))
         if (c.phone) Group("Calls", listOf { m ->
             SwitchRow(m, "Answer calls with your head", "Nod to accept, shake to decline", settings.gestureCalls) { v ->
                 if (v && !context.hearOn.controls.callsAllowed()) callPerms.launch(arrayOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.ANSWER_PHONE_CALLS))

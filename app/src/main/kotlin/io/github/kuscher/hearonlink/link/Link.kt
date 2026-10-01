@@ -50,8 +50,16 @@ data class LinkState(
     /** Head-sensor calibration for the current primary bud (null = uncalibrated defaults). */
     val headCal get() = cache.headCal(pod.leftPrimary)
 
-    /** For display: live state when connected, otherwise what we remember (read-only). */
-    val view: PodState get() = if (connected) pod else PodState(info = cache.info, controls = cache.controls)
+    /**
+     * For display: what the AirPods report, filled in with what we remember from last time until
+     * they do (a session's model and settings arrive a moment after it opens, and sometimes late),
+     * and all of it from memory while they're away (read-only then).
+     */
+    val view: PodState get() = when {
+        !connected -> PodState(info = cache.info, controls = cache.controls)
+        pod.info != null && pod.controls.isNotEmpty() -> pod
+        else -> pod.copy(info = pod.info ?: cache.info, controls = cache.controls + pod.controls)
+    }
 }
 
 /**

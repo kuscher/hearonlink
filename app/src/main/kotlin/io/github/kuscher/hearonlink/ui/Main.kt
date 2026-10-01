@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
@@ -112,13 +113,13 @@ fun AppScreen(s: LinkState, settings: Settings, initialPage: Page = Page.HOME, f
     Column(Modifier.fillMaxSize()) {
         CaptionSpacer(chrome)
         Box(Modifier.fillMaxWidth().background(chrome)) { Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars)) }
+        // Two panes (a Googlebook; every page but the full-window demo): the header keeps the AirPods'
+        // name, and Back sits with the page's title at the top of the settings pane it belongs to.
+        val twoPane = wide && page != Page.DEMO
         HeaderRow(chrome, height = if (wide) 52.dp else 64.dp) {
-            if (page != Page.HOME) TipIconButton(R.drawable.ic_back, "Back") { page = Page.HOME }
-            if (page == Page.HOME || (wide && page != Page.DEMO && page != Page.SETTINGS)) DeviceTitle(s, c, big = !wide)
+            if (page != Page.HOME && !twoPane) TipIconButton(R.drawable.ic_back, "Back") { page = Page.HOME }
+            if (page == Page.HOME || twoPane) DeviceTitle(s, c, big = !wide)
             else Text(page.title, Modifier.padding(start = 4.dp), style = if (wide) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge)
-            if (wide && page != Page.HOME && page != Page.DEMO && page != Page.SETTINGS) {
-                Text("·  ${page.title}", Modifier.padding(start = 4.dp), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
             Spacer(Modifier.weight(1f))
             if (page == Page.DEMO) TextAction("Done") { page = Page.HOME }
             else {
@@ -129,13 +130,20 @@ fun AppScreen(s: LinkState, settings: Settings, initialPage: Page = Page.HOME, f
         when {
             page == Page.DEMO -> DemoScreen(s, settings, c, wide, forced)
             wide -> Row(Modifier.fillMaxSize()) {
-                if (page != Page.SETTINGS) Column(
+                Column(
                     Modifier.width(452.dp).fillMaxHeight().background(chrome).verticalScroll(rememberScrollState())
                         .padding(start = 28.dp, end = 28.dp, top = 4.dp, bottom = 28.dp),
                 ) { DevicePane(s, c) }
                 Box(Modifier.weight(1f).fillMaxHeight()) {
                     PageColumn(padding = 40.dp) {
-                        if (page == Page.HOME) HomeSettings(s, settings, c) else PageContent(page, s, settings, c)
+                        if (page == Page.HOME) HomeSettings(s, settings, c)
+                        else Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                            if (twoPane) Row(Modifier.offset(x = (-12).dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                TipIconButton(R.drawable.ic_back, "Back", tint = MaterialTheme.colorScheme.onSurface) { page = Page.HOME }
+                                Title(page.title)
+                            }
+                            PageContent(page, s, settings, c)
+                        }
                     }
                 }
             }
@@ -190,7 +198,7 @@ private fun MoreMenu(s: LinkState, c: Ctx) {
     Box {
         TipIconButton(R.drawable.ic_more, "More") { open = true }
         DropdownMenu(open, { open = false }) {
-            if (s.connected && s.pod.has(Feature.HEAD_GESTURES)) DropdownMenuItem(text = { Text("Try head gestures") }, onClick = { open = false; c.go(Page.DEMO) })
+            if (s.connected && s.view.has(Feature.HEAD_GESTURES)) DropdownMenuItem(text = { Text("Try head gestures") }, onClick = { open = false; c.go(Page.DEMO) })
             DropdownMenuItem(text = { Text("Bluetooth settings") }, onClick = { open = false; context.startActivity(Intent(AndroidSettings.ACTION_BLUETOOTH_SETTINGS)) })
             if (!s.connected && c.link.aclConnected()) DropdownMenuItem(text = { Text("Reconnect controls") }, onClick = { open = false; LinkService.start(context) })
             DropdownMenuItem(text = { Text("About these AirPods") }, onClick = { open = false; c.go(Page.ABOUT) })
@@ -216,7 +224,7 @@ class PanelActivity : ComponentActivity() {
 @Composable
 fun PanelContent(s: LinkState, link: io.github.kuscher.hearonlink.link.Link, close: () -> Unit) {
     val context = LocalContext.current
-    val p = s.pod
+    val p = s.view
     Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.width(400.dp)) {
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -225,9 +233,9 @@ fun PanelContent(s: LinkState, link: io.github.kuscher.hearonlink.link.Link, clo
             }
             val live = s.connected
             BatteryTrio(batteryCells(s), big = false)
-            if (live && p.has(Feature.LISTENING_MODES)) ModeGroup(p.listeningMode, availableModes(p), height = 68.dp, onSelect = link::setMode)
-            if (live && p.has(Feature.CONVERSATION_AWARENESS)) Group(rows = listOf { m ->
-                SwitchRow(m, "Conversation awareness", null, p.conversationAwareness) { link.setFlag(Control.CONVERSATION_AWARENESS, it) }
+            if (p.has(Feature.LISTENING_MODES)) ModeGroup(p.listeningMode.takeIf { live }, availableModes(p), enabled = live, height = 68.dp, onSelect = link::setMode)
+            if (p.has(Feature.CONVERSATION_AWARENESS)) Group(rows = listOf { m ->
+                SwitchRow(m, "Conversation awareness", null, p.conversationAwareness.takeIf { live }) { link.setFlag(Control.CONVERSATION_AWARENESS, it) }
             })
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 TextAction("Open HearOn Link") {
