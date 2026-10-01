@@ -90,3 +90,6 @@ admin; Notifications/Quick Settings panel: EXPAND_STATUS_BAR + a hidden call; th
 POST_PROMOTED_NOTIFICATIONS). Never surfaced and untested: the on-AirPods press-and-hold assignment (0x16; this
 firmware doesn't report it), hearing-protection level (0x38), in-case tone volume (0x40), headphone accommodation (0x53).
 
+
+v0.3.0 published on GitHub 2026-10-01 (the user: "re-release it on github"); the release APK is on the HP. Play has
+0.2.1 (3) in review; HearOnLink-0.3.0.aab (code 4) is in executables/release-0.3.0/ and release-notes.txt is ready for it.
