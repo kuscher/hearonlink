@@ -53,8 +53,16 @@ Kit changes are listed in store-submission/README.md ("0.2.0 (2)"). tools/play-v
 on the HP in the house style of kuscher/googlebook-tech scripts/play/videos (title card, caption band, touches shown),
 blurring everything but HearOn Link and the system panels; its capture and compose steps are tested, the on-screen
 flow has NOT run yet (it needs the AirPods connected and the screen for a minute).
-Open, in order: (1) the user picks the AirPods in the app once and tries Show desktop / Open an app; (2) record the
-video with the AirPods in, upload it unlisted to YouTube, put the MP4 in a private folder, paste the link into store-submission/forms/foreground-service.md and the Console; (3) publish
-v0.2.0 on GitHub (tools/release.sh --publish) and upload HearOnLink-0.2.0.aab as the closed-testing draft (from the
-Mac: node scripts/play/bundle.mjs / listing.mjs in googlebook-tech); (4) merge the googlebook-tech branch that updates
-the privacy page and the googlebook.studio listing text, and edit kuscher/googlebook-tech-listings#1's description.
+Done 2026-09-30 (from the Mac): the declaration video was recorded on the HP with the AirPods Pro (4 scenes, 27 s,
+storyboard in store-submission/video/README.md; driven by screenshot detection, so the stop scene is not in it), is
+unlisted on YouTube https://youtu.be/lbD5PMXHcTI and in a private folder,
+and is filed in the Console's foreground-service declaration ("Continuous data transfer to an external device").
+v0.2.0 is published on GitHub; HearOnLink-0.2.0.aab (code 2) replaced 0.1.0 as the closed-testing release, the listing
+and screenshots were re-uploaded from the kit, the privacy page lost its accessibility section (googlebook-tech
+f758d7f), and the release was SENT FOR REVIEW (the user: "release the HearOn Link app"). Play's pre-review check
+flagged org.lsposed.hiddenapibypass ("unsupported APIs", a technical-quality warning about ART updates); it was
+ignored as "requires extensive changes". Follow-up: Android 16+ has a public BR/EDR socket API,
+BluetoothDevice.createUsingSocketSettings(BluetoothSocketSettings.Builder().setSocketType(BluetoothSocket.TYPE_L2CAP)
+.setL2capPsm(…)), worth trying on the HP so HiddenApiBypass is only needed below API 36 (or not at all).
+Still open: (1) the user picks the AirPods in the app once and tries Show desktop / Open an app; (2) edit
+kuscher/googlebook-tech-listings#1's description.
