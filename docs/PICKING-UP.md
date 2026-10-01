@@ -76,3 +76,7 @@ NOT verified: the real CDM single-device dialog (needs the user's tap); the log 
 linked (id) / <error>". Unrelated find that night: system volume was muted by the another app's "another app: Filming"
 Do Not Disturb rule (it disallows media).
 
+
+v0.2.1 published on GitHub 2026-10-01 (the user: "publish it"), after the user confirmed the AirPods in the new dialog on
+the HP (an association exists there now). Play still has 0.2.0 (2) in review: uploading HearOnLink-0.2.1.aab (code 3,
+in executables/release-0.2.1/) is a separate step from the Mac.
