@@ -36,13 +36,25 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:enableOnBackInvokedCallback="true"
+        android:resizeableActivity="true"
         android:theme="@style/Theme.HearOn">
 
+        <!-- A desktop window: resizable down to a phone-sized column; resizing, and plugging in a
+             keyboard or mouse, re-lays the UI out without restarting the activity. One window only
+             (singleTask): it shows one pair of AirPods. -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation"
             android:windowSoftInputMode="adjustResize">
+            <layout
+                android:defaultWidth="1180dp"
+                android:defaultHeight="800dp"
+                android:gravity="center"
+                android:minWidth="360dp"
+                android:minHeight="480dp" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

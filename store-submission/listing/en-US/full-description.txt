@@ -10,7 +10,7 @@ Ear detection
 Pause when you take an AirPod out and play again when it goes back in, or pause when you fall asleep.
 
 Stem presses your way
-Press once, twice, three times or hold, for both buds or each one: play or pause, next, previous, noise control, volume, voice assistant, show the desktop, or open an app you pick. Presses left on "AirPods default" keep working the same with your other devices.
+Press once, twice, three times or hold, for both buds or each one: play or pause, next, previous, volume, mute, noise control or one listening mode, voice assistant, show the desktop, or open an app you pick. Presses left on "AirPods default" keep working the same with your other devices.
 
 Head gestures
 Try them in a live demo that answers Yes or No, calibrate them to your own head, and map a nod and a shake to actions. On phones, nod to accept a call and shake your head to decline.

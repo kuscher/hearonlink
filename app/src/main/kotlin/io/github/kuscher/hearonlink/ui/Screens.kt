@@ -456,7 +456,7 @@ fun PageContent(page: Page, s: LinkState, settings: Settings, c: Ctx) {
                 if (p.has(Feature.ADAPTIVE) && p.adaptiveLevel != null) add { m -> SettingRow(m, "Adaptive audio", below = { AdaptiveSlider(p, c) }) }
             })
         }
-        Page.PRESSES -> PressesPage(settings, c)
+        Page.PRESSES -> PressesPage(s, settings, c)
         Page.PRESS -> Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
             Group("Press speed", listOf { m ->
                 SettingRow(m, "How fast to press twice or three times", below = {
@@ -523,8 +523,9 @@ fun PageContent(page: Page, s: LinkState, settings: Settings, c: Ctx) {
 }
 
 @Composable
-private fun PressesPage(settings: Settings, c: Ctx) {
+private fun PressesPage(s: LinkState, settings: Settings, c: Ctx) {
     val linker = rememberCompanionLinker()
+    val options = Action.forPresses(s.view)
     Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
         Hint("Pick what each press does. Presses left on “AirPods default” stay with the AirPods, so they work the same with your other devices. Custom presses work while HearOn Link is connected.")
         Group(null, listOf { m ->
@@ -533,7 +534,7 @@ private fun PressesPage(settings: Settings, c: Ctx) {
         val buds = if (settings.splitBuds) listOf("L" to "Left AirPod", "R" to "Right AirPod") else listOf("B" to "Both AirPods")
         for ((bud, title) in buds) Group(title, Press.entries.map { press ->
             { m: Modifier ->
-                ActionRow(m, PRESS_NAMES[press]!!, settings.presses["$bud.${press.name}"], Action.forPresses) { v ->
+                ActionRow(m, PRESS_NAMES[press]!!, settings.presses["$bud.${press.name}"], options) { v ->
                     c.prefs.update { st -> st.copy(presses = st.presses + ("$bud.${press.name}" to v)) }
                     if (opensWindow(v)) linker.ask()
                 }
@@ -563,8 +564,8 @@ private fun GesturesPage(s: LinkState, settings: Settings, c: Ctx) {
         }
         Group("Anytime", listOf(
             { m -> SwitchRow(m, "Use head gestures anytime", "While an AirPod is in your ear. Uses a little more battery.", settings.gesturesAnytime) { v -> c.prefs.update { it.copy(gesturesAnytime = v) } } },
-            { m -> ActionRow(m, "Nod", settings.nodAction, Action.forGestures, Action.NONE, enabled = settings.gesturesAnytime) { v -> c.prefs.update { it.copy(nodAction = v) }; if (opensWindow(v, Action.NONE)) linker.ask() } },
-            { m -> ActionRow(m, "Shake your head", settings.shakeAction, Action.forGestures, Action.NONE, enabled = settings.gesturesAnytime) { v -> c.prefs.update { it.copy(shakeAction = v) }; if (opensWindow(v, Action.NONE)) linker.ask() } },
+            { m -> ActionRow(m, "Nod", settings.nodAction, Action.forGestures(s.view), Action.NONE, enabled = settings.gesturesAnytime) { v -> c.prefs.update { it.copy(nodAction = v) }; if (opensWindow(v, Action.NONE)) linker.ask() } },
+            { m -> ActionRow(m, "Shake your head", settings.shakeAction, Action.forGestures(s.view), Action.NONE, enabled = settings.gesturesAnytime) { v -> c.prefs.update { it.copy(shakeAction = v) }; if (opensWindow(v, Action.NONE)) linker.ask() } },
         ))
         CompanionCard(linker, settings.gesturesAnytime && (opensWindow(settings.nodAction, Action.NONE) || opensWindow(settings.shakeAction, Action.NONE)))
         if (c.phone) Group("Calls", listOf { m ->

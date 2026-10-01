@@ -80,3 +80,13 @@ Do Not Disturb rule (it disallows media).
 v0.2.1 published on GitHub 2026-10-01 (the user: "publish it"), after the user confirmed the AirPods in the new dialog on
 the HP (an association exists there now). Play still has 0.2.0 (2) in review: uploading HearOnLink-0.2.1.aab (code 3,
 in executables/release-0.2.1/) is a separate step from the Mac.
+
+0.3.0 (2026-10-01): desktop declarations (explicit resizeableActivity, <layout> minimum, configChanges; resize tested
+live on the HP) and six more actions for presses/gestures (the four listening modes directly, conversation awareness
+toggle, mute), filtered by what the AirPods have. The user asked for "the custom stem feature" and "the other features
+we deferred but are possible without new permissions": everything on the old "possible, not built yet" list was already
+in; what stays out needs a permission or isn't possible (Overview, Back, Screenshot: accessibility only; Lock: device
+admin; Notifications/Quick Settings panel: EXPAND_STATUS_BAR + a hidden call; the status-bar battery chip:
+POST_PROMOTED_NOTIFICATIONS). Never surfaced and untested: the on-AirPods press-and-hold assignment (0x16; this
+firmware doesn't report it), hearing-protection level (0x38), in-case tone volume (0x40), headphone accommodation (0x53).
+

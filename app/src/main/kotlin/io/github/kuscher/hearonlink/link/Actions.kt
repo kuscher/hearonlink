@@ -6,6 +6,10 @@ import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.util.Log
 import android.view.KeyEvent
+import io.github.kuscher.hearonlink.aap.Control
+import io.github.kuscher.hearonlink.aap.Feature
+import io.github.kuscher.hearonlink.aap.ListeningMode
+import io.github.kuscher.hearonlink.aap.PodState
 import io.github.kuscher.hearonlink.aap.Press
 import io.github.kuscher.hearonlink.hearOn
 
@@ -19,13 +23,27 @@ enum class Action(val label: String) {
     PLAY_PAUSE("Play or pause"),
     NEXT("Next track"),
     PREVIOUS("Previous track"),
-    NOISE_CYCLE("Switch noise control"),
     VOLUME_UP("Volume up"),
     VOLUME_DOWN("Volume down"),
+    MUTE("Mute or unmute"),
+    NOISE_CYCLE("Switch noise control"),
+    MODE_TRANSPARENCY("Transparency"),
+    MODE_ADAPTIVE("Adaptive"),
+    MODE_NOISE_CANCELLATION("Noise Cancellation"),
+    MODE_OFF("Noise control off"),
+    CONVERSATION_AWARENESS("Conversation awareness on or off"),
     ASSISTANT("Voice assistant"),
     SHOW_DESKTOP("Show desktop"),
     OPEN_APP("Open an app"),
     ;
+
+    /** Whether AirPods in state [p] have what this action switches. */
+    fun fits(p: PodState) = when (this) {
+        NOISE_CYCLE, MODE_TRANSPARENCY, MODE_NOISE_CANCELLATION, MODE_OFF -> p.has(Feature.LISTENING_MODES)
+        MODE_ADAPTIVE -> p.has(Feature.ADAPTIVE)
+        CONVERSATION_AWARENESS -> p.has(Feature.CONVERSATION_AWARENESS)
+        else -> true
+    }
 
     companion object {
         /**
@@ -39,10 +57,10 @@ enum class Action(val label: String) {
 
         fun openApp(pkg: String) = "${OPEN_APP.name}:$pkg"
 
-        /** Choices for a stem press (AirPods default first). */
-        val forPresses = entries.toList()
+        /** Choices for a stem press (AirPods default first), for AirPods in state [p]: only what they can do. */
+        fun forPresses(p: PodState) = entries.filter { it.fits(p) }
         /** Choices for a head gesture ("Nothing" instead of an AirPods default). */
-        val forGestures = entries.filter { it != DEFAULT }
+        fun forGestures(p: PodState) = entries.filter { it != DEFAULT && it.fits(p) }
 
         /** What the AirPods do on their own, for when we intercept one bud's press but not the other's. */
         fun airpodsDefault(p: Press) = when (p) {
@@ -74,6 +92,15 @@ object Actions {
             Action.NEXT -> { key(KeyEvent.KEYCODE_MEDIA_NEXT); true }
             Action.PREVIOUS -> { key(KeyEvent.KEYCODE_MEDIA_PREVIOUS); true }
             Action.NOISE_CYCLE -> { context.hearOn.link.cycleMode(); true }
+            Action.MODE_TRANSPARENCY -> { context.hearOn.link.setMode(ListeningMode.TRANSPARENCY); true }
+            Action.MODE_ADAPTIVE -> { context.hearOn.link.setMode(ListeningMode.ADAPTIVE); true }
+            Action.MODE_NOISE_CANCELLATION -> { context.hearOn.link.setMode(ListeningMode.NOISE_CANCELLATION); true }
+            Action.MODE_OFF -> { context.hearOn.link.setMode(ListeningMode.OFF); true }
+            Action.CONVERSATION_AWARENESS -> {
+                val link = context.hearOn.link
+                link.setFlag(Control.CONVERSATION_AWARENESS, link.state.value.pod.conversationAwareness != true); true
+            }
+            Action.MUTE -> { audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_TOGGLE_MUTE, AudioManager.FLAG_SHOW_UI); true }
             Action.VOLUME_UP -> { audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI); true }
             Action.VOLUME_DOWN -> { audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI); true }
             Action.ASSISTANT -> start(context, Intent(Intent.ACTION_VOICE_COMMAND)) || start(context, Intent(Intent.ACTION_ASSIST))

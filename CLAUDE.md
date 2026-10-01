@@ -57,6 +57,11 @@ never copy LibrePods (GPL-3.0) code, prose, fonts or images; byte layouts/opcode
 
 ## Design rules (canvas https://claude.ai/artifact/TPTz5wiH4FfdQvC5mhV1bu, approved direction)
 - Nothing floats; header row below the system caption, caption painted the same colour.
+- Desktop window (manifest): `resizeableActivity`, `<layout>` min 360 × 480 dp, and `configChanges` for
+  size/keyboard changes, so MainActivity is NOT recreated on resize: everything size-dependent must
+  read Compose state (`windowWidthDp()`, insets), never values captured in onCreate. Verified on the
+  HP with `am task resize ID l t r b` (same Window, layout switches at 840 dp); that shell command
+  ignores the minimum size, so the minimum is only declared, not verified by dragging.
 - Googlebook ≥840 dp: device pane left (452 dp, chrome colour), settings right (max 680 dp), on every
   page but the full-window demo. The header keeps the AirPods' name; Back and the page title sit at
   the top of the right pane (never Back in the window's top-left corner beside the device pane).

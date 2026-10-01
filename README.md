@@ -53,7 +53,8 @@ No root, no account, no internet.
 - **Ear detection.** Pause when you take an AirPod out, play again when it goes back in (only if
   HearOn Link paused it), pause when you fall asleep.
 - **Stem presses, your way.** Press once, twice, three times or hold, for both buds or each on its
-  own: play or pause, next, previous, switch noise control, volume, voice assistant, **Show
+  own: play or pause, next, previous, volume, mute, switch noise control or go straight to one
+  listening mode, conversation awareness on or off, voice assistant, **Show
   desktop**, or **Open an app** you pick. Presses you leave on "AirPods default" stay with the
   AirPods, so they work the same with your other devices.
 - **Head gestures.** Try them in a live demo that says Yes or No, calibrate them to your own head,
@@ -70,6 +71,8 @@ No root, no account, no internet.
 
 ## Made for the Googlebook
 
+- **A proper desktop window.** It resizes freely, down to a phone-sized column, and re-lays itself
+  out as you drag instead of restarting; plugging in a keyboard or mouse doesn't restart it either.
 - **One calm window.** Your AirPods sit on the left (battery, listening mode, the main switches)
   and settings on the right. The window's own title bar is painted to match the header just below
   it; nothing floats over the content.

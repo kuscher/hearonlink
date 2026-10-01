@@ -1,5 +1,14 @@
 # What's new
 
+## 0.3.0 (1 October 2026)
+
+- **More for stem presses and head gestures:** go straight to Transparency, Adaptive, Noise
+  Cancellation or Off (instead of only switching to the next mode), turn conversation awareness on
+  or off, and mute or unmute. The menus list only what your AirPods have.
+- **A proper desktop window:** the app now tells Android it is resizable, with a smallest size of a
+  phone-sized column, and re-lays itself out while you resize instead of restarting. Plugging in a
+  keyboard or mouse doesn't restart it either.
+
 ## 0.2.1 (1 October 2026)
 
 - **Choosing your AirPods works with AirPods you've already paired.** The setup lists them and
