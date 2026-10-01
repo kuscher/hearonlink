@@ -31,3 +31,13 @@ Next steps:
 2. Record `./hol head 10` while the user nods and shakes; fix HeadMotion offsets + detector defaults.
 3. Verify service auto-start on connect, tile, notification actions, ear pause, nearby alert.
 4. CI workflow (core tests + debug build), README, licences, release v0.1.
+
+Google Play (2026-09-30, from the Mac): app "HearOn Link: Earbuds Companion" (Play app id 4972990156565698422,
+developer Fika Labs). Play App Signing uses this repo's release key (A1:12:57:4D…, uploaded with PEPK), so Play and
+GitHub APKs update each other. Listing, graphics, store settings (Tools) and all App content declarations are filed
+from store-submission/; the privacy policy is https://googlebook.studio/privacy/hearonlink. Version code 1 (0.1.0) is a
+draft on closed testing (alpha, track 4700420611186455222) with the Google Group googlebook-studio-testers@googlegroups.com
+and 178 countries. Left before Send for review: the Accessibility API and connectedDevice foreground-service
+declarations, each needing a video of the real flow with AirPods (disclosure card → consent → a stem press doing
+Overview; AirPods connecting → notification → a mode change while the app is closed). Record on the HP.
+
