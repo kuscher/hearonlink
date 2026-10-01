@@ -11,3 +11,4 @@ probe/libs/
 *.iml
 .idea/
 *.pass
+store-submission/video/out/

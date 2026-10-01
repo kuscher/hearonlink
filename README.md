@@ -6,8 +6,8 @@
 
 <p align="center">
   <b>Your AirPods, at home on a Googlebook.</b><br>
-  Battery for each bud and the case, noise control, conversation awareness, stem presses that open
-  Overview or show the desktop, and head gestures: nod for yes, shake for no.
+  Battery for each bud and the case, noise control, conversation awareness, stem presses that show
+  the desktop or open an app, and head gestures: nod for yes, shake for no.
 </p>
 
 <p align="center">
@@ -53,8 +53,8 @@ No root, no account, no internet.
 - **Ear detection.** Pause when you take an AirPod out, play again when it goes back in (only if
   HearOn Link paused it), pause when you fall asleep.
 - **Stem presses, your way.** Press once, twice, three times or hold, for both buds or each on its
-  own: play or pause, next, previous, switch noise control, volume, voice assistant, or a system
-  action like **Overview** or **Show desktop**. Presses you leave on "AirPods default" stay with the
+  own: play or pause, next, previous, switch noise control, volume, voice assistant, **Show
+  desktop**, or **Open an app** you pick. Presses you leave on "AirPods default" stay with the
   AirPods, so they work the same with your other devices.
 - **Head gestures.** Try them in a live demo that says Yes or No, calibrate them to your own head,
   and turn on "anytime" to map a nod and a shake to actions (shake to show the desktop, for example).
@@ -77,16 +77,17 @@ No root, no account, no internet.
   with the essentials; a long-press opens HearOn Link.
 - **Starts on its own.** You pick your AirPods once in Android's own device picker. From then on
   HearOn Link wakes up when they connect, without a battery-optimisation exception.
-- **Stem presses and head gestures for the desktop.** Overview, show the desktop, Back,
-  notifications, Quick Settings, a screenshot or lock, from a press or a shake of the head.
+- **Stem presses and head gestures for the desktop.** Show the desktop or open any app from a
+  press or a shake of the head, without an accessibility service: Android allows it for the
+  AirPods you picked in its own device picker.
 - **A notification with three numbers.** Left, right and case as Android 17 metrics, with
   one-tap listening modes.
 
 <p align="center">
   <img src="docs/images/panel.png" width="300" alt="The Quick Settings panel: battery, listening mode buttons and conversation awareness">
   &nbsp;&nbsp;
-  <img src="docs/images/presses.png" width="560" alt="Stem presses: press twice set to Overview, the other presses left on AirPods default">
-  <br><sub>The Quick Settings panel, and stem presses with a press twice for Overview.</sub>
+  <img src="docs/images/presses.png" width="560" alt="Stem presses: press twice set to Open Calculator, the other presses left on AirPods default">
+  <br><sub>The Quick Settings panel, and stem presses with a press twice to open the calculator.</sub>
 </p>
 
 **On phones** it's the same app in one column, with pages for each group of settings.
@@ -121,7 +122,8 @@ protocol research; the app follows what your own AirPods say.
 them out: Find My, spatial audio with head tracking, Siri, audio sharing, firmware updates,
 hearing aid and hearing test, transparency tuning, loud sound reduction, and automatic switching
 between your devices. Android's own Bluetooth settings still show one battery number, because only
-system apps can change that.
+system apps can change that. Overview, Back, screenshots and locking the screen from a press would
+need an accessibility service, and HearOn Link doesn't have one.
 
 ## Install
 
@@ -137,11 +139,9 @@ Android 16 QPR3 on a Pixel: older Bluetooth stacks can't open the AirPods' contr
 
 To update, install a newer `HearOnLink.apk` over the old one; your settings stay.
 
-**For Overview, Show desktop and other system actions**, turn on *HearOn Link system actions* when
-the app asks (Android's accessibility settings). It only performs the actions you pick; it doesn't
-read the screen or your input. If the switch is greyed out, Android is protecting an app installed
-from the web: open *Settings › Apps › HearOn Link*, tap ⋮ › *Allow restricted settings*, then turn
-the switch on.
+**Show desktop and Open an app** work once you've picked your AirPods in Android's device picker
+(the setup's second step; the Stem presses page offers it again if you skipped it). HearOn Link has
+no accessibility service and needs no special settings.
 
 Only one app at a time can talk to your AirPods this way: close CAPod or LibrePods if you use them.
 
@@ -161,7 +161,9 @@ Android's Bluetooth stack dropped that channel, which is why AirPods apps needed
 Android has no public call for a classic L2CAP socket, so HearOn Link reaches the hidden
 `BluetoothDevice.createL2capSocket` through [AndroidHiddenApiBypass](https://github.com/LSPosed/AndroidHiddenApiBypass).
 Everything else uses ordinary Android APIs: the companion-device manager, a connected-device
-foreground service, a Quick Settings tile, notifications and Glance widgets.
+foreground service, a Quick Settings tile, notifications and Glance widgets. There is no
+accessibility service: showing the desktop or opening an app from a press is an ordinary activity
+start, which Android allows from the background for the companion app of a device you picked.
 
 The protocol code, the head-gesture detector and the Bluetooth advert decoder are plain Kotlin
 with no Android in them (`core/`), tested with JUnit, partly against packets captured from real

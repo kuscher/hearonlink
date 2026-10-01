@@ -7,9 +7,10 @@
 #   ./hol app                 build, install and launch (only when you say so: it takes focus)
 #   ./hol install | launch | stop | uninstall
 #   ./hol debug CMD...        test hooks (DebugReceiver.kt): state, connect, disconnect, send HEX,
-#                             mode off|tr|ad|no, control ID V.., log on|off, head SECS, wait SECS, onboarded [false]
+#                             mode off|tr|ad|no, control ID V.., log on|off, head SECS, wait SECS, onboarded [false],
+#                             action NAME[:package] (performs it from the background: it takes focus)
 #   ./hol head [SECS] [OUT]   record raw head-motion frames (wear the AirPods and nod/shake)
-#   ./hol render KIND W H DPI DARK OUT   KIND home|page:NOISE|demo|demo:yes|demo:no|away|onboarding|panel
+#   ./hol render KIND W H DPI DARK OUT   KIND home|page:NOISE|demo|demo:yes|demo:no|away|onboarding|panel|picker|calibrate
 #   ./hol pull FILE [OUT]     copy a file from the app's cache (calibration-last.txt = the last calibration's raw frames)
 #   ./hol logs [N]            HearOn Link's log lines
 #   ./hol sh CMD...           adb shell on the device
@@ -76,5 +77,5 @@ case "$cmd" in
   idle)
     A shell dumpsys power | grep -E "lastUserActivityTime=|mWakefulness=" | head -2
     A shell "dumpsys window | grep -E 'mCurrentFocus' | head -1" ;;
-  *) sed -n '3,16p' "$0" ;;
+  *) sed -n '3,17p' "$0" ;;
 esac

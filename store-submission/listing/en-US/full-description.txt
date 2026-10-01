@@ -10,7 +10,7 @@ Ear detection
 Pause when you take an AirPod out and play again when it goes back in, or pause when you fall asleep.
 
 Stem presses your way
-Press once, twice, three times or hold, for both buds or each one: play or pause, next, previous, noise control, volume, voice assistant, or a system action such as Overview or Show desktop. Presses left on "AirPods default" keep working the same with your other devices.
+Press once, twice, three times or hold, for both buds or each one: play or pause, next, previous, noise control, volume, voice assistant, show the desktop, or open an app you pick. Presses left on "AirPods default" keep working the same with your other devices.
 
 Head gestures
 Try them in a live demo that answers Yes or No, calibrate them to your own head, and map a nod and a shake to actions. On phones, nod to accept a call and shake your head to decline.
@@ -21,11 +21,14 @@ Press speed and hold duration, volume swipe, call controls, microphone side, ton
 Made for laptops
 One window with your AirPods on the left and settings on the right, a Quick Settings tile with a small panel, and it starts on its own when the AirPods connect, after you link them once in Android's device picker.
 
-Why HearOn Link can use an accessibility service
-Show desktop, Overview, Back, Notifications, Quick Settings, Screenshot and Lock need HearOn Link's optional system-actions service. It only performs the actions you pick for a stem press or a head gesture: it receives no accessibility events, can't read the screen and doesn't see what you type or tap. It stays off until you turn it on in Android's settings.
+While your AirPods are connected
+HearOn Link keeps a small service running, shown by its notification, so battery levels, ear detection, your stem presses and the tile stay current while the app's window is closed. It stops by itself when the AirPods disconnect.
 
 Private
-No internet permission, no accounts, ads, analytics or trackers. Your AirPods' settings stay on your device.
+No internet permission, no accounts, ads, analytics or trackers, and no accessibility service. Your AirPods' settings stay on your device.
+
+Not a medical device
+On AirPods Pro 3, HearOn Link can show the heart rate your AirPods measure while that page is open; nothing is stored. HearOn Link is not a medical device and does not diagnose, treat, cure or prevent any medical condition. Talk to a healthcare professional for medical advice.
 
 Requirements
 Bluetooth AirPods or Beats with an Apple chip. On phones, Android 17, or Android 16 QPR3 on a Pixel: older Bluetooth stacks can't open the AirPods' control channel. Some features need an Apple device and aren't included: Find My, spatial audio, Siri, audio sharing and firmware updates.

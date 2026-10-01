@@ -41,3 +41,20 @@ and 178 countries. Left before Send for review: the Accessibility API and connec
 declarations, each needing a video of the real flow with AirPods (disclosure card → consent → a stem press doing
 Overview; AirPods connecting → notification → a mode change while the app is closed). Record on the HP.
 
+0.2.0 (2026-10-01, on the HP; built and installed there, NOT yet published): the accessibility service is gone
+(the user: "It makes play releasing hard"; "Remove the a11y permission everywhere"), so Play needs only the
+connectedDevice declaration now. Show desktop = Home intent, new "Open an app" action with a picker; both are
+background activity starts, which need the companion association (verified on the HP with a temporary
+`cmd companiondevice associate 10 PKG MAC`: BAL_ALLOW_ALLOWLISTED_COMPONENT, all windows minimise; without it the log
+says "Background activity launch blocked" and startActivity still returns normally). The user's own install has NO
+association (the setup's picker was skipped), so its Presses and Gestures pages show "Choose your AirPods first".
+The old actions stored there (Overview, Screenshot, Quick Settings) now read as AirPods default / Nothing.
+Kit changes are listed in store-submission/README.md ("0.2.0 (2)"). tools/play-video.sh records the declaration video
+on the HP in the house style of kuscher/googlebook-tech scripts/play/videos (title card, caption band, touches shown),
+blurring everything but HearOn Link and the system panels; its capture and compose steps are tested, the on-screen
+flow has NOT run yet (it needs the AirPods connected and the screen for a minute).
+Open, in order: (1) the user picks the AirPods in the app once and tries Show desktop / Open an app; (2) record the
+video with the AirPods in, upload it unlisted to YouTube, put the MP4 in a private folder, paste the link into store-submission/forms/foreground-service.md and the Console; (3) publish
+v0.2.0 on GitHub (tools/release.sh --publish) and upload HearOnLink-0.2.0.aab as the closed-testing draft (from the
+Mac: node scripts/play/bundle.mjs / listing.mjs in googlebook-tech); (4) merge the googlebook-tech branch that updates
+the privacy page and the googlebook.studio listing text, and edit kuscher/googlebook-tech-listings#1's description.

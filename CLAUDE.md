@@ -16,7 +16,7 @@ never copy LibrePods (GPL-3.0) code, prose, fonts or images; byte layouts/opcode
   `link/` AapConnection.kt (L2cap: hidden createL2capSocket via HiddenApiBypass; session), Link.kt
   (app-wide hub: StateFlow<LinkState> with pod + DeviceCache + Batteries, commands, sensor streams by owner),
   Controls.kt (stem-press forwarding 0x39 + actions, head gestures anytime, nod/shake for calls on phones),
-  Actions.kt (Action list, performer, SystemActions accessibility service), Reactions.kt (ear pause/resume,
+  Actions.kt (Action list, performer, launchable apps for "Open an app"), Reactions.kt (ear pause/resume,
   ducking while talking, low battery; HeadMotion decode offsets), LinkService.kt (FGS connectedDevice +
   PresenceService (CDM) + BtReceiver), Nearby.kt (PendingIntent BLE scan + Companion association helpers).
   `system/` Notifications.kt (+ Actions receiver), ModeTile.kt (tile + Glance BatteryWidget).
@@ -32,6 +32,7 @@ never copy LibrePods (GPL-3.0) code, prose, fonts or images; byte layouts/opcode
   Installing doesn't launch; never launch or steal focus while the user is active (`./hol idle`).
 - Debug hooks: `session N [keep]` runs the link without the service (the FGS can't start from the
   background without a companion association), `selftest ID A B` writes a control and restores it,
+  `action NAME[:package]` performs an action from the background like a press would (it takes focus),
   `state`, `send HEX`, `log on` (tx/rx to logcat; serials are masked), `render …` (Shots.kt).
 - `./hol debug` clears logcat first; use a raw `am broadcast` when you need earlier lines. A goAsync
   receiver holds the app's broadcast queue: later debug broadcasts wait until it finishes.
@@ -58,10 +59,14 @@ never copy LibrePods (GPL-3.0) code, prose, fonts or images; byte layouts/opcode
 - Nothing floats; header row below the system caption, caption painted the same colour.
 - Googlebook ≥840 dp: device pane left (452 dp, chrome colour), settings right (max 680 dp).
 - Only show what the AirPods support (Family features + reported controls). Root-only features never show.
-- No INTERNET permission, no overlays. The accessibility service (SystemActions) only performs global
-  actions (Home, Overview, Back, Notifications, QS, Screenshot, Lock): no event types, no window content,
-  and it's off until the user turns it on for a system action. Peek itself is a WM key gesture
-  (TOGGLE_DESKTOP_HOME_SCREEN_PEEK) apps can't send; "Show desktop (peek)" uses GLOBAL_ACTION_HOME.
+- No INTERNET permission, no overlays, and NO accessibility service (removed in 0.2.0 at the user's
+  request: it makes a Play release hard; don't bring it back). "Show desktop" is the Home intent
+  (ACTION_MAIN + CATEGORY_HOME) and "Open an app" a launch intent; both start an activity from the
+  background, which Android allows only for a companion app (CDM association), so the Presses and
+  Gestures pages show a "Choose your AirPods first" card when there is none. Stored action values:
+  the Action name, plus ":package" for OPEN_APP; unknown names (0.1's Overview, Back, Notifications,
+  Quick Settings, Screenshot, Lock) fall back to AirPods default (presses) or Nothing (gestures).
+  Peek itself is a WM key gesture (TOGGLE_DESKTOP_HOME_SCREEN_PEEK) apps can't send.
 - Head motion streams only for owners: the demo, a ringing call (phones), or "gestures anytime" (opt-in,
   only while a bud is in an ear). The demo pauses anytime actions (Controls.demoOpen).
 - Battery shows the cache: live parts normal, others faded with their age. Never wipe a level on a

@@ -24,6 +24,9 @@ tools/release.sh            # core tests, signed build, certificate check, check
 tools/release.sh --publish  # … and push, then create the GitHub release v<version> with the notes
 ```
 
+The same run writes `HearOnLink-<version>.aab` next to the APKs: the bundle Google Play wants
+(see [store-submission/README.md](../store-submission/README.md)). It isn't attached to the GitHub release.
+
 `tools/release.sh` refuses to continue if the notes file is missing, the key isn't there, the APK
 isn't signed with the HearOn Link certificate, or (with `--publish`) there are uncommitted changes.
 
@@ -36,4 +39,5 @@ sha256sum -c executables/release-<version>/SHA256SUMS
 
 Before publishing, install the release APK on a Googlebook over the previous release and check that
 it connects (`./hol debug state` shows `status=CONNECTED`), that the tile and notification update,
-and that the head-gesture demo still says Yes and No.
+that the head-gesture demo still says Yes and No, and that a press or gesture set to Show desktop
+or Open an app does it with HearOn Link's window closed.

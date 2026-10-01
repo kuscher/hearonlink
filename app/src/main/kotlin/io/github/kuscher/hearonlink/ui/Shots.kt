@@ -8,13 +8,18 @@ import android.hardware.display.DisplayManager
 import android.media.ImageReader
 import android.os.Handler
 import android.os.Looper
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -98,7 +103,7 @@ object Shots {
         }
     }
 
-    /** kind: home | page:NOISE | demo | demo:yes | demo:no | away | onboarding | panel */
+    /** kind: home | page:NOISE | demo | demo:yes | demo:no | away | onboarding | panel | picker | calibrate */
     fun render(context: Context, kind: String, w: Int, h: Int, dpi: Int, dark: Boolean, out: File, done: (String) -> Unit) {
         val app = context.hearOn
         val reader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 2)
@@ -106,21 +111,24 @@ object Shots {
         val vd = dm.createVirtualDisplay("hearon-shot", w, h, dpi, reader.surface, DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY)
         val pres = Presentation(context, vd.display, android.R.style.Theme_DeviceDefault_NoActionBar_Fullscreen)
         val owner = Owner()
-        // A clean example setup (not the user's own): press twice for Overview, shake to show the desktop.
+        // A clean example setup (not the user's own): press twice to open the calculator, shake to show the desktop.
         val settings = io.github.kuscher.hearonlink.data.Settings(
             dark = if (dark) "dark" else "light", onboarded = kind != "onboarding", theme = "teal",
-            presses = mapOf("B.DOUBLE" to "OVERVIEW"), gesturesAnytime = true, nodAction = "PLAY_PAUSE", shakeAction = "SHOW_DESKTOP",
+            presses = mapOf("B.DOUBLE" to "OPEN_APP:com.google.android.calculator"), gesturesAnytime = true, nodAction = "PLAY_PAUSE", shakeAction = "SHOW_DESKTOP",
         )
         val state = sample(connected = kind != "away")
         val view = ComposeView(pres.context).apply {
             setViewTreeLifecycleOwner(owner); setViewTreeSavedStateRegistryOwner(owner); setViewTreeViewModelStoreOwner(owner)
             setContent {
                 androidx.compose.runtime.CompositionLocalProvider(androidx.activity.compose.LocalOnBackPressedDispatcherOwner provides owner,
-                    androidx.activity.compose.LocalActivityResultRegistryOwner provides owner) {
+                    androidx.activity.compose.LocalActivityResultRegistryOwner provides owner, LocalSample provides true) {
                 HearOnTheme(settings) {
                     Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxSize()) {
                         when {
                             kind == "panel" -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { PanelContent(state, app.link) {} }
+                            kind == "picker" -> Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.32f)), contentAlignment = Alignment.Center) {
+                                AppPickerContent("com.google.android.calculator", {}, {}, Modifier.widthIn(max = 440.dp).fillMaxWidth(0.94f).fillMaxHeight(0.82f))
+                            }
                             kind == "calibrate" -> CalibrationWizard(state, Ctx(app.link, app.prefs, {}, phone = w < 1000), wide = w >= 1000) {}
                             kind.startsWith("demo") -> AppScreen(state, settings, Page.DEMO,
                                 forced = when (kind) { "demo:yes" -> Gesture.NOD; "demo:no" -> Gesture.SHAKE; else -> null })

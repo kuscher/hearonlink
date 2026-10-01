@@ -1,5 +1,15 @@
 # What's new
 
+## 0.2.0 (1 October 2026)
+
+- **No accessibility service any more.** HearOn Link no longer asks for accessibility access at all.
+- **Show desktop** now works without it, for the AirPods you picked in Android's device picker
+  (the Stem presses and Head gestures pages offer the picker if you skipped it in the setup).
+- **Open an app**: a new action for stem presses and head gestures. Pick any app from a list.
+- Gone, because Android only offers them to accessibility services: Overview, Back, Notifications,
+  Quick Settings, Screenshot and Lock screen. Presses that used them go back to "AirPods default",
+  head gestures to "Nothing".
+
 ## 0.1.0 (30 September 2026)
 
 The first release: an AirPods companion for Googlebooks and Android phones.

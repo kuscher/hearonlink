@@ -79,24 +79,26 @@ class Controls(private val context: Context, private val prefs: Prefs, private v
     }
 
     private fun pressMask(st: Settings): Int = Press.mask(Press.entries.filter { p ->
-        st.pressAction("L", p) != "DEFAULT" || st.pressAction("R", p) != "DEFAULT"
+        Action.of(st.pressAction("L", p)) != Action.DEFAULT || Action.of(st.pressAction("R", p)) != Action.DEFAULT
     })
 
     private fun onPress(e: AapEvent.StemPress) {
         val press = Press.of(e.press) ?: return
         val st = prefs.settings.value
         val bud = if (e.bud == 1) "L" else "R"
-        var a = Action.of(st.pressAction(bud, press))
+        val stored = st.pressAction(bud, press)
+        var a = Action.of(stored)
         // This bud keeps the AirPods' own behaviour, but the press was forwarded for the other bud.
         if (a == Action.DEFAULT) a = Action.airpodsDefault(press)
-        Actions.perform(context, a)
+        Actions.perform(context, a, Action.app(stored))
     }
 
     private fun onGesture(g: Gesture) {
         if (ringing) { answer(g); return }
         val st = prefs.settings.value
         if (!st.gesturesAnytime) return
-        Actions.perform(context, Action.of(if (g == Gesture.NOD) st.nodAction else st.shakeAction))
+        val stored = if (g == Gesture.NOD) st.nodAction else st.shakeAction
+        Actions.perform(context, Action.of(stored, Action.NONE), Action.app(stored))
     }
 
     // ---- calls (phones) ----------------------------------------------------------------------

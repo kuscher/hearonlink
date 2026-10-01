@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
 # Builds a signed release and (with --publish) creates the GitHub release.
-#   tools/release.sh            build + verify into executables/release-<version>/
+#   tools/release.sh            build + verify into executables/release-<version>/ (APK, and the .aab for Google Play)
 #   tools/release.sh --publish  … and publish it as v<version> with docs/release-notes/<version>.md
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")/.."
@@ -9,9 +9,11 @@ VERSION=$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts)
 NOTES=docs/release-notes/$VERSION.md
 [ -f "$NOTES" ] || { echo "missing $NOTES"; exit 1; }
 [ -f ~/.config/hearonlink/keystore.jks ] || { echo "no release key in ~/.config/hearonlink"; exit 1; }
-./gradlew :core:test :app:assembleRelease --console=plain -q
+./gradlew :core:test :app:assembleRelease :app:bundleRelease --console=plain -q
 OUT=executables/release-$VERSION
 mkdir -p "$OUT"
+# The bundle is for Google Play only (store-submission/README.md); it isn't attached to the GitHub release.
+cp app/build/outputs/bundle/release/app-release.aab "$OUT/HearOnLink-$VERSION.aab"
 cp app/build/outputs/apk/release/app-release.apk "$OUT/HearOnLink.apk"
 cp "$OUT/HearOnLink.apk" "$OUT/HearOnLink-$VERSION.apk"
 BT=$(ls -d "${ANDROID_HOME:-$HOME/Android/Sdk}"/build-tools/*/ | sort -V | tail -1)

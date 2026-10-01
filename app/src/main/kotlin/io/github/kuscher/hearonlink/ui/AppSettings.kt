@@ -81,6 +81,7 @@ fun AppSettingsPage(settings: Settings, c: Ctx) {
         Group("About HearOn Link", listOf(
             { m -> SettingRow(m, "Version ${BuildConfig.VERSION_NAME}", "A personal passion project by Alexander Kuscher. Not affiliated with Apple. AirPods is a trademark of Apple Inc.") },
             { m -> NavRow(m, "Open-source licences", "MIT. Credits: LibrePods' protocol research.") { licences = true } },
+            { m -> NavRow(m, "Privacy policy", "Nothing leaves this device") { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://googlebook.studio/privacy/hearonlink"))) } },
             { m -> NavRow(m, "Source code", "github.com/kuscher/hearonlink") { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/kuscher/hearonlink"))) } },
         ))
         if (licences) LicencesDialog { licences = false }

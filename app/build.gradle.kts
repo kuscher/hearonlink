@@ -12,8 +12,8 @@ android {
         applicationId = "io.github.kuscher.hearonlink"
         minSdk = 33
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     // Release signing from ~/.config/hearonlink (never committed). Absent -> unsigned release build.

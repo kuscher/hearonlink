@@ -1,1 +1,1 @@
-The first release on Google Play: battery for each bud and the case, listening modes, conversation awareness, ear detection, stem presses with your own actions (Overview, Show desktop), head gestures with a live demo, and a Quick Settings tile, panel, notification and widget.
+The first release on Google Play: battery for each bud and the case, listening modes, conversation awareness, ear detection, stem presses with your own actions (Show desktop, Open an app), head gestures with a live demo, and a Quick Settings tile, panel, notification and widget.

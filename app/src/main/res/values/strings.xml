@@ -4,7 +4,4 @@
     <string name="tile_label">Listening mode</string>
     <string name="widget_label">AirPods battery</string>
     <string name="widget_description">Battery for your AirPods and their case</string>
-    <string name="a11y_label">HearOn Link system actions</string>
-    <string name="a11y_summary">Lets your AirPods show the desktop, Overview and more</string>
-    <string name="a11y_description">When you press an AirPods stem or nod or shake your head, HearOn Link can do system actions you pick: show the desktop, Overview, Back, notifications, Quick Settings, a screenshot or lock the screen. This service only performs those actions. It receives no accessibility events, doesn\'t read the screen, and doesn\'t see what you type or tap.</string>
 </resources>

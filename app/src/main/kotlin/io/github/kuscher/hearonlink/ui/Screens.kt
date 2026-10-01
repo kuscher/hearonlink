@@ -1,11 +1,15 @@
 package io.github.kuscher.hearonlink.ui
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.provider.Settings as AndroidSettings
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +23,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -30,6 +36,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -37,15 +44,22 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.kuscher.hearonlink.R
 import io.github.kuscher.hearonlink.aap.Control
@@ -61,19 +75,25 @@ import io.github.kuscher.hearonlink.data.Settings
 import io.github.kuscher.hearonlink.gestures.Sensitivity
 import io.github.kuscher.hearonlink.hearOn
 import io.github.kuscher.hearonlink.link.Action
+import io.github.kuscher.hearonlink.link.Actions
+import io.github.kuscher.hearonlink.link.Companion
 import io.github.kuscher.hearonlink.link.Link
 import io.github.kuscher.hearonlink.link.LinkState
 import io.github.kuscher.hearonlink.link.LinkStatus
-import io.github.kuscher.hearonlink.link.SystemActions
 import io.github.kuscher.hearonlink.system.icon
 import io.github.kuscher.hearonlink.system.label
 import io.github.kuscher.hearonlink.ui.theme.LocalHearOnColors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 enum class Page(val title: String) {
     HOME("HearOn Link"), NOISE("Noise control"), PRESSES("Stem presses"), PRESS("Press speed and hold"),
     EAR("Ear detection"), GESTURES("Head gestures"), SOUND("Sound"), CALLS("Calls and microphone"),
     HEALTH("Health"), ABOUT("About these AirPods"), SETTINGS("Settings"), DEMO("Try head gestures"),
 }
+
+/** True in Shots.kt's renders: sample AirPods, so nothing about this device's own setup shows. */
+val LocalSample = staticCompositionLocalOf { false }
 
 /** Everything the screens need to act. */
 class Ctx(val link: Link, val prefs: Prefs, val go: (Page) -> Unit, val phone: Boolean)
@@ -199,17 +219,17 @@ private fun AwayCard(s: LinkState, c: Ctx) {
 
 private val PRESS_NAMES = mapOf(Press.SINGLE to "Press once", Press.DOUBLE to "Press twice", Press.TRIPLE to "Press three times", Press.LONG to "Press and hold")
 
-private fun pressSummary(st: Settings): String {
+private fun pressSummary(context: Context, st: Settings): String {
     val custom = Press.entries.mapNotNull { p ->
-        val l = Action.of(st.pressAction("L", p)); val r = Action.of(st.pressAction("R", p))
-        if (l == Action.DEFAULT && r == Action.DEFAULT) null
-        else "${PRESS_NAMES[p]}: " + (if (l == r || !st.splitBuds) l.label else "${l.label} / ${r.label}")
+        val l = st.pressAction("L", p); val r = st.pressAction("R", p)
+        if (Action.of(l) == Action.DEFAULT && Action.of(r) == Action.DEFAULT) null
+        else "${PRESS_NAMES[p]}: " + (if (l == r || !st.splitBuds) Actions.label(context, l) else "${Actions.label(context, l)} / ${Actions.label(context, r)}")
     }
     return if (custom.isEmpty()) "AirPods defaults" else custom.joinToString(" · ")
 }
 
-private fun gestureSummary(st: Settings, phone: Boolean): String = when {
-    st.gesturesAnytime -> "Nod: ${Action.of(st.nodAction).label} · Shake: ${Action.of(st.shakeAction).label}"
+private fun gestureSummary(context: Context, st: Settings, phone: Boolean): String = when {
+    st.gesturesAnytime -> "Nod: ${Actions.label(context, st.nodAction, Action.NONE)} · Shake: ${Actions.label(context, st.shakeAction, Action.NONE)}"
     phone && st.gestureCalls -> "Nod to answer calls, shake to decline"
     else -> "Off · try them in the demo"
 }
@@ -226,18 +246,19 @@ private fun speedSummary(p: PodState): String {
 fun HomeSettings(s: LinkState, settings: Settings, c: Ctx) {
     val p = s.view
     val live = s.connected
+    val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(26.dp)) {
         if (p.has(Feature.LISTENING_MODES) || !live) Group("Noise control", listOf(
             { m -> SettingRow(m, "Press and hold switches between", enabled = live, below = { CycleChips(p, c, live) }) },
             { m -> SwitchRow(m, "Noise Cancellation with one AirPod", "Keep noise control on when you wear only one", if (live) p.oneBudAnc else null) { c.link.setFlag(Control.ONE_BUD_ANC, it) } },
         ))
         Group("Controls", buildList {
-            add { m -> NavRow(m, "Stem presses", pressSummary(settings), R.drawable.ic_hold) { c.go(Page.PRESSES) } }
+            add { m -> NavRow(m, "Stem presses", pressSummary(context, settings), R.drawable.ic_hold) { c.go(Page.PRESSES) } }
             add { m -> NavRow(m, "Press speed and hold duration", speedSummary(p), R.drawable.ic_tune, enabled = live) { c.go(Page.PRESS) } }
             if (p.has(Feature.VOLUME_SWIPE)) add { m -> SwitchRow(m, "Swipe the stem to change volume", null, if (live) p.volumeSwipe else null, R.drawable.ic_volume) { c.link.setFlag(Control.VOLUME_SWIPE, it) } }
         })
         if (p.has(Feature.HEAD_GESTURES) || !live) Group("Head gestures", listOf(
-            { m -> NavRow(m, "Head gestures", gestureSummary(settings, c.phone), R.drawable.ic_head) { c.go(Page.GESTURES) } },
+            { m -> NavRow(m, "Head gestures", gestureSummary(context, settings, c.phone), R.drawable.ic_head) { c.go(Page.GESTURES) } },
         ))
         Group("Ear detection", buildList {
             add { m -> SwitchRow(m, "Pause when you take an AirPod out", "Plays again when you put it back in", settings.earPause, R.drawable.ic_ear) { v -> c.prefs.update { it.copy(earPause = v, earResume = v) } } }
@@ -267,10 +288,11 @@ private fun callSummary(p: PodState) = when (p.callControlsSwapped) {
 fun PhoneNav(s: LinkState, settings: Settings, c: Ctx) {
     val p = s.view
     val live = s.connected
+    val context = LocalContext.current
     val rows = buildList<@Composable (Modifier) -> Unit> {
         if (!live || p.has(Feature.LISTENING_MODES)) add { m -> NavRow(m, "Noise control", "Press and hold, one-AirPod mode", R.drawable.ic_mode_nc, enabled = live) { c.go(Page.NOISE) } }
-        add { m -> NavRow(m, "Stem presses", pressSummary(settings), R.drawable.ic_hold) { c.go(Page.PRESSES) } }
-        if (!live || p.has(Feature.HEAD_GESTURES)) add { m -> NavRow(m, "Head gestures", gestureSummary(settings, true), R.drawable.ic_head) { c.go(Page.GESTURES) } }
+        add { m -> NavRow(m, "Stem presses", pressSummary(context, settings), R.drawable.ic_hold) { c.go(Page.PRESSES) } }
+        if (!live || p.has(Feature.HEAD_GESTURES)) add { m -> NavRow(m, "Head gestures", gestureSummary(context, settings, true), R.drawable.ic_head) { c.go(Page.GESTURES) } }
         add { m -> NavRow(m, "Ear detection", if (settings.earPause) "Pause when you take one out" else "Off", R.drawable.ic_ear) { c.go(Page.EAR) } }
         add { m -> NavRow(m, "Sound", "EQ, tone volume", R.drawable.ic_volume) { c.go(Page.SOUND) } }
         if (p.has(Feature.CALL_CONTROLS)) add { m -> NavRow(m, "Calls and microphone", callSummary(p), R.drawable.ic_call) { c.go(Page.CALLS) } }
@@ -298,48 +320,105 @@ private fun CycleChips(p: PodState, c: Ctx, enabled: Boolean) {
     }
 }
 
-/** A row whose value is an action, picked from a menu that opens on click. */
+/** A row whose value is an action, picked from a menu that opens on click. "Open an app…" then asks which one. */
 @Composable
-fun ActionRow(modifier: Modifier, title: String, current: Action, options: List<Action>, enabled: Boolean = true, onPick: (Action) -> Unit) {
+fun ActionRow(modifier: Modifier, title: String, stored: String?, options: List<Action>, fallback: Action = Action.DEFAULT, enabled: Boolean = true, onPick: (String) -> Unit) {
+    val context = LocalContext.current
+    val current = Action.of(stored, fallback)
     var open by remember { mutableStateOf(false) }
+    var picking by remember { mutableStateOf(false) }
     Box(modifier) {
-        SettingRow(Modifier, title, current.label, onClick = { open = true }, enabled = enabled) {
+        SettingRow(Modifier, title, Actions.label(context, stored, fallback), onClick = { open = true }, enabled = enabled) {
             Glyph(R.drawable.ic_down, size = 20.dp, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         DropdownMenu(open, { open = false }) {
-            var lastSystem = false
-            for (a in options) {
-                if (a.system && !lastSystem) Text("System (needs system actions)", Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                lastSystem = a.system
-                DropdownMenuItem(
-                    text = { Text(a.label) },
-                    trailingIcon = if (a == current) ({ Glyph(R.drawable.ic_check, size = 18.dp) }) else null,
-                    onClick = { open = false; onPick(a) },
-                )
+            for (a in options) DropdownMenuItem(
+                text = { Text(if (a == Action.OPEN_APP) "Open an app…" else a.label) },
+                trailingIcon = if (a == current) ({ Glyph(R.drawable.ic_check, size = 18.dp) }) else null,
+                onClick = { open = false; if (a == Action.OPEN_APP) picking = true else onPick(a.name) },
+            )
+        }
+    }
+    if (picking) AppPicker(Action.app(stored), onPick = { picking = false; onPick(Action.openApp(it)) }, onDismiss = { picking = false })
+}
+
+/** Pick the app a press or a gesture opens: every app with a launcher icon, by name. */
+@Composable
+private fun AppPicker(current: String?, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        AppPickerContent(current, onPick, onDismiss, Modifier.widthIn(max = 440.dp).fillMaxWidth(0.94f).fillMaxHeight(0.82f))
+    }
+}
+
+@Composable
+fun AppPickerContent(current: String?, onPick: (String) -> Unit, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val apps by produceState<List<Actions.App>?>(null) { value = withContext(Dispatchers.IO) { Actions.launchable(context) } }
+    var query by remember { mutableStateOf("") }
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface, modifier = modifier) {
+        Column {
+            Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Open an app", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                TipIconButton(R.drawable.ic_close, "Close") { onDismiss() }
+            }
+            OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                singleLine = true, placeholder = { Text("Search apps") })
+            val shown = apps?.filter { query.isBlank() || it.name.contains(query.trim(), ignoreCase = true) }
+            if (shown != null && shown.isEmpty()) Hint("No app with that name.", Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
+            LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
+                items(shown.orEmpty(), key = { it.pkg }) { app ->
+                    Row(Modifier.fillMaxWidth().clickable { onPick(app.pkg) }.padding(horizontal = 20.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        AppIcon(app.pkg)
+                        Text(app.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                        if (app.pkg == current) Glyph(R.drawable.ic_check, size = 18.dp, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
             }
         }
     }
 }
 
-/** Shown when a chosen action needs the system-actions service and it's off. */
 @Composable
-private fun SystemActionsCard(needed: Boolean) {
+private fun AppIcon(pkg: String, size: Dp = 36.dp) {
     val context = LocalContext.current
-    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
-    val enabled = remember(lifecycle) { SystemActions.enabled(context) }
-    if (!needed || enabled) return
+    val icon by produceState<ImageBitmap?>(null, pkg) {
+        value = withContext(Dispatchers.IO) { runCatching { context.packageManager.getApplicationIcon(pkg).toBitmap(96, 96).asImageBitmap() }.getOrNull() }
+    }
+    Box(Modifier.size(size)) { icon?.let { Image(it, null, Modifier.fillMaxSize()) } }
+}
+
+/** Whether a stored action brings something to the front (the desktop, an app). */
+private fun opensWindow(stored: String?, fallback: Action = Action.DEFAULT) = Action.of(stored, fallback).let { it == Action.SHOW_DESKTOP || it == Action.OPEN_APP }
+
+/**
+ * Android lets a companion app open the desktop or another app from the background. Shown when
+ * such an action is picked but the AirPods were never chosen in Android's device picker.
+ */
+@Composable
+private fun CompanionCard(needed: Boolean) {
+    if (LocalSample.current) return
+    val context = LocalContext.current
+    var linked by remember { mutableStateOf(Companion.associated(context)) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val chooser = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { }
+    if (!needed || linked) return
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.primaryContainer).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("Turn on system actions", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+        Text("Choose your AirPods first", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
         Text(
-            "Show desktop, Overview and the other system actions need HearOn Link's system-actions service. It only performs " +
-                "the actions you pick; it doesn't read the screen or your input. If the switch is greyed out, open App info › ⋮ › Allow restricted settings first.",
+            error?.let { "The system picker didn't work ($it). Showing the desktop or opening an app from a press or a gesture needs it." }
+                ?: "To show the desktop or open an app while HearOn Link is in the background, pick your AirPods in Android's device list once.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
-        Row { PillButton("Open accessibility settings", R.drawable.ic_open, filled = true) { SystemActions.openSettings(context) } }
+        Row {
+            PillButton("Choose AirPods", R.drawable.ic_bt, filled = true) {
+                error = null
+                Companion.associate(context, onChooser = { chooser.launch(IntentSenderRequest.Builder(it).build()) }, onDone = { linked = true }, onError = { error = it })
+            }
+        }
     }
 }
 
@@ -440,13 +519,12 @@ private fun PressesPage(settings: Settings, c: Ctx) {
         val buds = if (settings.splitBuds) listOf("L" to "Left AirPod", "R" to "Right AirPod") else listOf("B" to "Both AirPods")
         for ((bud, title) in buds) Group(title, Press.entries.map { press ->
             { m: Modifier ->
-                ActionRow(m, PRESS_NAMES[press]!!, Action.of(settings.presses["$bud.${press.name}"]), Action.forPresses) { a ->
-                    c.prefs.update { st -> st.copy(presses = st.presses + ("$bud.${press.name}" to a.name)) }
+                ActionRow(m, PRESS_NAMES[press]!!, settings.presses["$bud.${press.name}"], Action.forPresses) { v ->
+                    c.prefs.update { st -> st.copy(presses = st.presses + ("$bud.${press.name}" to v)) }
                 }
             }
         })
-        val needsSystem = Press.entries.any { p -> Action.of(settings.pressAction("L", p)).system || Action.of(settings.pressAction("R", p)).system }
-        SystemActionsCard(needsSystem)
+        CompanionCard(Press.entries.any { p -> opensWindow(settings.pressAction("L", p)) || opensWindow(settings.pressAction("R", p)) })
     }
 }
 
@@ -469,10 +547,10 @@ private fun GesturesPage(s: LinkState, settings: Settings, c: Ctx) {
         }
         Group("Anytime", listOf(
             { m -> SwitchRow(m, "Use head gestures anytime", "While an AirPod is in your ear. Uses a little more battery.", settings.gesturesAnytime) { v -> c.prefs.update { it.copy(gesturesAnytime = v) } } },
-            { m -> ActionRow(m, "Nod", Action.of(settings.nodAction), Action.forGestures, enabled = settings.gesturesAnytime) { a -> c.prefs.update { it.copy(nodAction = a.name) } } },
-            { m -> ActionRow(m, "Shake your head", Action.of(settings.shakeAction), Action.forGestures, enabled = settings.gesturesAnytime) { a -> c.prefs.update { it.copy(shakeAction = a.name) } } },
+            { m -> ActionRow(m, "Nod", settings.nodAction, Action.forGestures, Action.NONE, enabled = settings.gesturesAnytime) { v -> c.prefs.update { it.copy(nodAction = v) } } },
+            { m -> ActionRow(m, "Shake your head", settings.shakeAction, Action.forGestures, Action.NONE, enabled = settings.gesturesAnytime) { v -> c.prefs.update { it.copy(shakeAction = v) } } },
         ))
-        SystemActionsCard(settings.gesturesAnytime && (Action.of(settings.nodAction).system || Action.of(settings.shakeAction).system))
+        CompanionCard(settings.gesturesAnytime && (opensWindow(settings.nodAction, Action.NONE) || opensWindow(settings.shakeAction, Action.NONE)))
         if (c.phone) Group("Calls", listOf { m ->
             SwitchRow(m, "Answer calls with your head", "Nod to accept, shake to decline", settings.gestureCalls) { v ->
                 if (v && !context.hearOn.controls.callsAllowed()) callPerms.launch(arrayOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.ANSWER_PHONE_CALLS))

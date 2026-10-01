@@ -7,7 +7,8 @@ Submitted 2026-09-30 as https://github.com/kuscher/googlebook-tech-listings/issu
 - **GitHub repo:** kuscher/hearonlink
 - **Google Play link:** (none yet)
 - **What it does:** An AirPods companion for Googlebooks: battery for each bud and the case, noise
-  control, stem presses that open Overview or show the desktop, and head gestures (nod for yes,
-  shake for no), in a calm Material 3 Expressive window. No root, no internet.
+  control, stem presses that show the desktop or open an app, and head gestures (nod for yes,
+  shake for no), in a calm Material 3 Expressive window. No root, no internet, no accessibility
+  service.
 - **Checks:** installs and runs on a Googlebook (tested on the HP Googlebook 14, Googlebook OS /
   Android 17, with AirPods Pro 2); made by me.

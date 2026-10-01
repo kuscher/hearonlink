@@ -1,6 +1,6 @@
 # HearOn Link privacy policy
 
-Last updated: 30 September 2026
+Last updated: 1 October 2026
 
 HearOn Link is an AirPods companion app made by Alexander Kuscher as a personal hobby project.
 This policy covers the HearOn Link app for Android.
@@ -35,10 +35,12 @@ Uninstalling HearOn Link deletes all of it.
   when they connect.
 - **Phone calls** (phones only, and only if you turn on answering calls with your head): to know
   when a call rings and to accept or decline it.
-- **System actions** (optional accessibility service): performs Home, Overview, Back,
-  Notifications, Quick Settings, Screenshot or Lock when you press a stem or move your head, if you
-  pick those actions. It receives no accessibility events, can't read the screen and doesn't see
-  what you type or tap.
+- **Apps with a launcher icon**: so you can pick one for "Open an app" (a stem press or a head
+  gesture), HearOn Link can see which apps on your device have a launcher icon. The list is only
+  shown to you in the picker; the app you choose is saved in HearOn Link's settings.
+
+HearOn Link has no accessibility service. It can't read the screen, other apps' content, or what
+you type or tap.
 
 ## Head motion
 

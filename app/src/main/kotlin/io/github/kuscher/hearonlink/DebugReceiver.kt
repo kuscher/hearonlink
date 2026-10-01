@@ -60,6 +60,11 @@ class DebugReceiver : BroadcastReceiver() {
             "mode" -> { ListeningMode.entries.firstOrNull { it.name.startsWith(parts[1].uppercase()) }?.let(link::setMode); say("ok") }
             "control" -> { link.setControl(parts[1].toInt(16), *parts.drop(2).map { it.toInt() }.toIntArray()); say("ok") }
             "log" -> { Link.DEBUG = parts.getOrNull(1) != "off"; say("${Link.DEBUG}") }
+            "action" -> { // action NAME[:package], from the background like a press or a gesture would
+                val a = io.github.kuscher.hearonlink.link.Action.of(parts[1], io.github.kuscher.hearonlink.link.Action.NONE)
+                say("$a ${io.github.kuscher.hearonlink.link.Actions.perform(context, a, io.github.kuscher.hearonlink.link.Action.app(parts[1]))} " +
+                    "companion=${io.github.kuscher.hearonlink.link.Companion.associated(context)}")
+            }
             "onboarded" -> { app.prefs.update { it.copy(onboarded = parts.getOrNull(1) != "false") }; say("ok") }
             "offsets" -> { // offsets V H [scaleV scaleH]: set the calibration for the current primary bud
                 val side = if (link.state.value.pod.leftPrimary) "L" else "R"

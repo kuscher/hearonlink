@@ -20,6 +20,14 @@
     <uses-feature android:name="android.software.companion_device_setup" android:required="false" />
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
 
+    <!-- "Open an app" (a stem press or head gesture): the apps with a launcher icon, to pick one. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".HearOnApp"
         android:allowBackup="true"
@@ -77,19 +85,6 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
             <meta-data android:name="android.service.quicksettings.ACTIVE_TILE" android:value="true" />
-        </service>
-
-        <!-- Optional: performs Home / Overview / Back / Notifications / Quick Settings / Screenshot / Lock
-             for stem presses and head gestures. Receives no events and can't read the screen. -->
-        <service
-            android:name=".link.SystemActions"
-            android:exported="true"
-            android:label="@string/a11y_label"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data android:name="android.accessibilityservice" android:resource="@xml/system_actions" />
         </service>
 
         <receiver android:name=".link.BtReceiver" android:exported="true">
