@@ -19,7 +19,7 @@ following the kits of the other Googlebook apps). Developer account Fika Labs (7
 | Data safety | [forms/data-safety.md](forms/data-safety.md) | "No data collected" |
 | Content rating (IARC) | [forms/content-rating.md](forms/content-rating.md) | expected: Everyone / PEGI 3 |
 | Other App content declarations | [forms/app-content.md](forms/app-content.md) | reviewer note, permissions, what reviewers may raise |
-| Foreground service declaration | [forms/foreground-service.md](forms/foreground-service.md) | texts ready to paste; needs the video link |
+| Foreground service declaration | [forms/foreground-service.md](forms/foreground-service.md) | texts ready to paste, video https://youtu.be/lbD5PMXHcTI |
 | The video for that declaration | [video/README.md](video/README.md), `tools/play-video.sh` | recorded on the HP with AirPods in |
 | Phone screenshots (optional, not uploaded) | [graphics/phone/](graphics/phone) (8) | 1080 × 1920 (9:16), the real phone layout, straight from `./hol render` |
 

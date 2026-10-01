@@ -50,7 +50,7 @@ none fits, choose "Other" and paste the description below.
 
 ## Video link
 
-**[paste the YouTube link once the video is recorded and uploaded: see ../video/README.md]**
+**https://youtu.be/lbD5PMXHcTI** (unlisted, 27 s, recorded on the HP Googlebook with AirPods Pro on 30 September 2026; storyboard in ../video/README.md)
 
 Like the other apps' declaration videos: unlisted on the YouTube channel, with the MP4 kept in a private folder. Play's Help page gives no format rules
 for this video beyond "demonstrating each foreground service feature … the steps the user needs to
