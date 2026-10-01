@@ -6,8 +6,8 @@
 
 SCENES.tsv: start, end (seconds of the take), x, y, w, h (the rectangle to keep sharp) and the caption, tab-separated.
 The result follows the other apps' declaration videos (kuscher/googlebook-tech scripts/play/videos): a title card,
-then each scene with a numbered caption band under it. Everything outside a scene's rectangle is blurred, and the
-gaps between scenes are cut.
+then each scene with a numbered caption band under it. Everything outside a scene's rectangle is blurred, a small
+rectangle is shown up to twice its size, and the gaps between scenes are cut.
 """
 import pathlib
 import subprocess
@@ -48,15 +48,15 @@ def title_card(path):
         y += 96
     y += 30
     what = ("Foreground service type connectedDevice. Shown: the service running while AirPods are connected, with its "
-            "notification; the listening mode changed in the app, then from the notification with the app's window "
-            "closed; the Quick Settings tile; and the service stopping when the AirPods disconnect.")
+            "notification; the listening mode changed from the notification with the app's window closed, then in the "
+            "app; and the small panel of HearOn Link's Quick Settings tile, with the window closed again.")
     for line in textwrap.wrap(what, 78):
         d.text((x, y), line, font=font(38, 450), fill=(201, 204, 211))
         y += 54
     y += 44
     for fact in (f"Package io.github.kuscher.hearonlink · version {version}",
                  f"Recorded on a Googlebook (Android 17, API 37, {W} × {H}) with AirPods Pro · touches are shown as dots",
-                 "Everything except HearOn Link and the system panels is blurred"):
+                 "Everything except HearOn Link's notification, window and panel is blurred"):
         d.text((x, y), fact, font=font(28, 450), fill=(154, 160, 171))
         y += 46
     im.save(path)
@@ -92,7 +92,15 @@ for i, (a, b, x, y, w, h, caption) in enumerate(rows):
     cap = out / f"cap-{i}.png"
     band(cap, i + 1, caption)
     part = out / f"part-{i}.mp4"
-    vf = (f"[0:v]fps=30,split[s][k];[s]boxblur=28:3[bg];[k]crop={w}:{h}:{x}:{y}[keep];[bg][keep]overlay={x}:{y}[v];"
+    # A small rectangle (a notification, the tile's panel) is shown larger, centred on where it is, so it stays
+    # readable when the video is watched at a lower resolution.
+    z = min(2.0, 0.5 * W / w, 0.7 * H / h)
+    z = z if z >= 1.2 else 1.0
+    zw, zh = int(w * z) // 2 * 2, int(h * z) // 2 * 2
+    zx = min(max(0, x + w // 2 - zw // 2), W - zw)
+    zy = min(max(0, y + h // 2 - zh // 2), H - zh)
+    vf = (f"[0:v]fps=30,split[s][k];[s]boxblur=28:3[bg];[k]crop={w}:{h}:{x}:{y},scale={zw}:{zh}:flags=lanczos[keep];"
+          f"[bg][keep]overlay={zx}:{zy}[v];"
           f"[v]pad={FW}:{FH}:0:0:color=0x15171c[p];[p][1:v]overlay=0:{H},setsar=1[o]")
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{a:.2f}", "-to", f"{b:.2f}", "-i", raw, "-i", str(cap),
                     "-filter_complex", vf, "-map", "[o]", *enc, str(part)], check=True)

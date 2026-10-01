@@ -5,11 +5,25 @@ service feature" and "the steps the user needs to take in your app in order to t
 feature". HearOn Link has one such feature: the connected-device service that runs while AirPods
 are connected. `tools/play-video.sh` records it on the Googlebook and builds the final file.
 
-Status (1 October 2026): the capture and the composing are tested; the on-screen walkthrough itself
-has not run yet. It needs the AirPods connected and the screen for about a minute, and the first
-take will probably need a rectangle or a pause adjusted in the script.
+Status (30 September 2026): recorded on the HP Googlebook with AirPods Pro and composed (27 s). The
+take was driven from the Mac by screenshot detection (`uiautomator dump` can't get an idle state
+on the Googlebook desktop), so the notification row, the app window and the tile's panel were
+found on screen and only they are sharp. The AirPods stayed connected, so the stop scene (6 below)
+is not in this video; the declaration doesn't require it.
 
-## Storyboard (about 45 seconds)
+## Storyboard as recorded (27 seconds)
+
+| # | On screen | Caption burned into the video |
+|---|---|---|
+| 1 | HearOn Link's ongoing notification, app window closed | AirPods connected, HearOn Link's window closed: its connected-device service runs and shows this notification (battery, listening mode). |
+| 2 | The notification expanded; a tap on Noise Cancellation in it | Expanding the notification shows the listening modes: switching to Noise Cancellation from it, without opening the app. |
+| 3 | HearOn Link's window; a tap on Transparency | The app shows the same state, kept by the service: Noise Cancellation. Switching back to Transparency in the app. |
+| 4 | The Quick Settings tile's small panel, window closed again | With the window closed again, HearOn Link's Quick Settings tile opens this small panel: the same battery and listening mode, kept current by the service. |
+
+The notification and the panel are shown larger than on screen (the composer zooms a small
+rectangle up to 2×), so they stay readable on YouTube.
+
+## Original storyboard (about 45 seconds, `tools/play-video.sh`)
 
 | # | On screen | Caption burned into the video |
 |---|---|---|
