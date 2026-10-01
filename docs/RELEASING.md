@@ -78,9 +78,8 @@ release, and this route doesn't upload it to Play.
 
 `tools/release.sh` refuses to continue if the notes file is missing, the key isn't there, the APK
 isn't signed with the HearOn Link certificate, or (with `--publish`) there are uncommitted changes.
-Use one route per version. `--publish` creates the tag `v<version>` too, and that starts the
-workflow: expect that run to fail at "Publish on GitHub", because the release exists already, and to
-upload nothing to Play.
+`--publish` creates the tag `v<version>` too, and that starts the workflow: it leaves the release
+you made as it is, and still builds the bundle and puts it on Play as a draft.
 
 ## Checking a release by hand
 
