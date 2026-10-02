@@ -23,7 +23,7 @@ Day 1, later (user request "implement the possible but not yet built"):
 
 Release 0.1.0 (2026-09-30): new headphones icon (tools/logo.py), README/licences/privacy/changelog,
 tools/release.sh + docs/RELEASING.md, CI; GitHub release v0.1.0 published (HearOnLink.apk, SHA256SUMS);
-release key backed up privately (a private folder). googlebook.studio listing text in
+release key backed up privately. googlebook.studio listing text in
 store-submission/googlebook-studio.md; repo made PUBLIC and listing filed as kuscher/googlebook-tech-listings#1.
 
 Next steps:
