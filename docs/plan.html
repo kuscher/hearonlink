@@ -239,7 +239,7 @@ footer { font-size: 0.85rem; color: var(--muted) }
     <li>A <code>./hol</code> helper builds, installs and drives the app on the HP over the Terminal's adb socket, like <code>./summa</code>. Nothing launches or steals focus while you're working.</li>
     <li>Protocol and gesture tests run on the VM. Device checks run on the HP (Arm) and the ASUS (x86_64). No emulators on the VM.</li>
     <li>GitHub Actions runs the tests and a debug build on every push. Releases are signed builds from a <code>v*</code> tag with the APK and SHA-256 attached.</li>
-    <li>Commit and push to <code>kuscher/hearonlink</code> (private) at every milestone. The release key lives in <code>~/.config/hearonlink</code> with a copy in private storage, never in git.</li>
+    <li>Commit and push to <code>kuscher/hearonlink</code> (private) at every milestone. The release key lives in <code>~/.config/hearonlink</code> with a private copy, never in git.</li>
     <li>Publishing: GitHub releases first, then your googlebook.studio showcase, then a Google Play kit (listing, screenshots, data safety, the connected-device service video) like Summa's. Register the package and key for developer verification before 2027.</li>
   </ul>
 </section>
