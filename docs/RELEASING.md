@@ -59,7 +59,7 @@ the secrets. The job that holds the signing key runs only GitHub's own actions, 
 commits. Anyone with write access to the repo can push a tag, so give write access only to people
 you'd trust with a release.
 
-The key is backed up in the maintainer's a private folder (and in a private folder). It is never committed (`.gitignore`
+The key is backed up privately, outside the repo. It is never committed (`.gitignore`
 covers `*.jks`, `*.keystore`, `*.pass`).
 
 ## On a machine that has the key
