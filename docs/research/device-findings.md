@@ -1,7 +1,7 @@
 # Device findings (HP Googlebook 14, 2026-09-30)
 
 Checked over adb from the Terminal VM with a throwaway probe (`probe/`, run via `am instrument`).
-Device: HP Googlebook 14, Android 17, SDK 37.1, build (build),
+Device: HP Googlebook 14, Android 17, SDK 37.1,
 Bluetooth mainline module `com.google.android.bt` versionCode 371899999, controller HCI/LMP 5.4.
 
 ## AirPods under test

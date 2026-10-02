@@ -487,7 +487,7 @@ always) for the Apple vendor-ID spoof.**
   - It is in `android17-release` / `android-17.0.0_r1`, and so in every Android 17 build that tracks AOSP.
   - It is also in the Pixel Android 16 QPR3 (`CP1A`) Bluetooth module from March 2026, and in OEM
     backports: OxygenOS/ColorOS 16, One UI 9 (A17).
-- **Our target.** The HP Googlebook 14 on Android 17 (`(build)`, module `com.google.android.bt`
+- **Our target.** The HP Googlebook 14 on Android 17 (module `com.google.android.bt`
   371899999) opens PSM 0x1001 from a normal app with no root (probe, 2026-09-30). The remaining
   non-public piece is the hidden-API socket constructor, not root.
 

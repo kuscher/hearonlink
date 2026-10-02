@@ -10,7 +10,7 @@ Status 2026-09-30 (end of day 1):
 - Phase 4: demo screen done; detector needs a recorded trace (user wearing the AirPods) to confirm
   the sensor offsets and tune thresholds; call answering on phones not written yet.
 - Phase 5 not started: README (passion-project style), licences screen/NOTICES, PRIVACY.md, release
-  workflow, backup of the key, googlebook.studio listing (repo kuscher/googlebook-tech-listings).
+  workflow, a backup of the key, googlebook.studio listing (repo kuscher/googlebook-tech-listings).
 
 Day 1, later (user request "implement the possible but not yet built"):
 - Stem press actions incl. system actions (Show desktop via Home, Overview…), head gestures anytime with
@@ -73,7 +73,7 @@ can't be ruled out). Fixes: away keeps the controls, disabled; `LinkState.view` 
 request names the bonded device (the old UUID-only picker stayed empty for paired AirPods); picking Show desktop /
 Open an app asks for the confirmation at once; desktop Back moved into the right pane; Settings is two-pane too.
 NOT verified: the real CDM single-device dialog (needs the user's tap); the log says "companion: dialog ready /
-linked (id) / <error>". Unrelated find that night: system volume was muted by the another app's "another app: Filming"
+linked (id) / <error>". Unrelated find that night: system volume was muted by another app's
 Do Not Disturb rule (it disallows media).
 
 

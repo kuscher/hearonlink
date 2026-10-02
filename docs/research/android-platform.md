@@ -11,7 +11,7 @@ How this was verified:
 - AOSP sources on android.googlesource.com: `android17-release` branch and the
   `android-17.0.0_r1` tag, plus a blobless clone of `platform/packages/modules/Bluetooth` for `git log`.
 - Google's published Android 16 hidden-API flags file.
-- Read-only `adb` queries on the HP Googlebook 14: build `(build)`,
+- Read-only `adb` queries on the HP Googlebook 14: Android 17,
   SDK 37 (`sdk_full` 37.1), arm64-v8a.
 
 Web-only claims are linked, and anything unverified is marked **(unverified)**.

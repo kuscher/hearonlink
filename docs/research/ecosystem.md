@@ -214,7 +214,7 @@ as of 2026-09-29):
 
 | Works | Doesn't |
 |---|---|
-| Any Android 17 / AOSP-17-based build (Pixel A17, Samsung One UI 9 beta on S23+/S25U/S26U/Z Flip 6, **HP Googlebook 14 (build)** per device-findings.md) | Samsung One UI 8.5 (Android 16: S24+, S24U, S25U) |
+| Any Android 17 / AOSP-17-based build (Pixel A17, Samsung One UI 9 beta on S23+/S25U/S26U/Z Flip 6, **HP Googlebook 14** per device-findings.md) | Samsung One UI 8.5 (Android 16: S24+, S24U, S25U) |
 | Pixel Android 16 from the April 2026 update (one Pixel 10a on the same build reported failing) | GrapheneOS builds based on Android 16 |
 | OnePlus 12/15 OxygenOS 16, Oppo ColorOS 16 | Nothing Phone 4a Pro, Fairphone 6 (A16), Poco F7 Pro HyperOS 3.0.303 |
 | Poco X7 Pro HyperOS 3.1 after disabling `com.xiaomi.bluetooth` | |
@@ -716,7 +716,7 @@ For a permissively licensed PodLink:
   ARC's Bluetooth sits behind the ChromeOS BlueZ stack, so AAP was never an option there.
 - **Googlebook (Android 17 native)** is better placed, per the read-only checks on 2026-09-30 and
   device-findings.md:
-  - HP Googlebook 14: arm64, SDK 37, `(build)`, BT mainline module
+  - HP Googlebook 14: arm64, SDK 37, BT mainline module
     `com.google.android.bt` 371899999;
   - AirPods Pro (A3048) bonded BR/EDR only and active for A2DP and HFP;
   - Settings shows a **single HFP battery value**, with no L/R/case split and no Fast-Pair-style
