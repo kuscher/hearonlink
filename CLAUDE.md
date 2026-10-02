@@ -4,6 +4,11 @@ AirPods companion for Googlebooks (Googlebook OS = Android 17 desktop) and Andro
 Kotlin + Jetpack Compose, Material 3 Expressive (material3 1.5.0-alpha29, pinned). MIT, clean-room:
 never copy LibrePods (GPL-3.0) code, prose, fonts or images; byte layouts/opcodes are facts.
 
+## This repo is public
+The Play listing links here. Keep out of every file, commit message and release note: device serial numbers and
+adb names, build numbers and codenames, what else is installed or open on the owner's devices, the names of his
+private projects and paths into their repos, and where signing keys are backed up (say "backed up privately").
+
 ## Layout
 - `core/` pure Kotlin, JUnit on the VM (`./hol test`):
   `aap/` Aap.kt (framing, builders, control ids, ListeningMode), AapEvent.kt (parser), PodState.kt
