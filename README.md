@@ -24,10 +24,10 @@
   <img src="https://img.shields.io/badge/no_root-needed-3D8B83" alt="No root needed">
   <img src="https://img.shields.io/badge/Material_3-Expressive-4A6362" alt="Material 3 Expressive">
   <img src="https://img.shields.io/badge/license-MIT-555555" alt="MIT license">
-  <img src="https://img.shields.io/badge/developed_entirely_on-a_Googlebook-0E7F7C" alt="Developed entirely on a Googlebook">
+  <img src="https://img.shields.io/badge/developed_on-a_Googlebook-0E7F7C" alt="Developed on a Googlebook">
 </p>
 
-<p align="center"><sub>A personal hobby project by <a href="https://github.com/kuscher">Alexander Kuscher</a>, proudly developed entirely on a Googlebook.
+<p align="center"><sub>A personal hobby project by Fika Labs, proudly developed on a Googlebook.
 Not affiliated with or endorsed by any employer, or by Apple (<a href="#about-this-project">more</a>).</sub></p>
 
 <p align="center">
@@ -205,7 +205,7 @@ signed on GitHub).
 
 ## About this project
 
-HearOn Link is my personal hobby project, made by me, [Alexander Kuscher](https://github.com/kuscher).
+HearOn Link is my personal hobby project, published as Fika Labs.
 It has no affiliation with my employer: my employer didn't make, sponsor, review or endorse it, and
 HearOn Link doesn't endorse my employer or its products either. The views, choices and any mistakes
 here are mine alone.
@@ -218,7 +218,7 @@ HearOn Link stands on the shoulders of the [LibrePods](https://github.com/librep
 project and the people whose AirPods research it builds on. HearOn Link doesn't include their code:
 its protocol code was written independently from the documented byte layouts and our own packet captures.
 
-— Alexander ([@kuscher](https://github.com/kuscher))
+— Fika Labs
 
 ## License
 

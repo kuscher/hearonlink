@@ -33,4 +33,4 @@ On AirPods Pro 3, HearOn Link can show the heart rate your AirPods measure while
 Requirements
 Bluetooth AirPods or Beats with an Apple chip. On phones, Android 17, or Android 16 QPR3 on a Pixel: older Bluetooth stacks can't open the AirPods' control channel. Some features need an Apple device and aren't included: Find My, spatial audio, Siri, audio sharing and firmware updates.
 
-HearOn Link is a free, open-source hobby project (MIT licence), developed entirely on a Googlebook. AirPods and Beats are trademarks of Apple Inc. HearOn Link isn't made, sponsored or endorsed by Apple.
+HearOn Link is a free, open-source hobby project (MIT licence), developed on a Googlebook. AirPods and Beats are trademarks of Apple Inc. HearOn Link isn't made, sponsored or endorsed by Apple.
